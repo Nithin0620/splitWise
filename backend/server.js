@@ -84,9 +84,18 @@ app.use(async (req, res, next) => {
 });
 app.use(passport.initialize());
 
+// Cloudflare Workers cannot host Socket.IO. Fail fast instead of hanging the isolate.
+if (isWorker) {
+  app.use('/socket.io', (req, res) => {
+    res.status(501).json({ message: 'Socket.IO is not supported on this deployment' });
+  });
+}
+
 // Make sure MongoDB is connected before handling API requests.
 app.use(async (req, res, next) => {
-  if (req.method === 'OPTIONS' || req.path === '/api/health') return next();
+  if (req.method === 'OPTIONS' || req.path === '/api/health' || req.path.startsWith('/socket.io')) {
+    return next();
+  }
   try {
     await connectDB();
   } catch (err) {
