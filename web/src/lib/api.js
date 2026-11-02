@@ -1,7 +1,17 @@
 import axios from 'axios'
 
+const configuredUrl = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
+const configuredOrigin = configuredUrl.endsWith('/api')
+  ? configuredUrl.slice(0, -4)
+  : configuredUrl
+
+export const API_ORIGIN = configuredOrigin
+export const API_BASE_URL = configuredUrl
+  ? `${configuredOrigin}/api`
+  : '/api'
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   withCredentials: true,
 })
 

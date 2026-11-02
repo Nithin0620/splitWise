@@ -1,11 +1,12 @@
 import { io } from 'socket.io-client'
+import { API_ORIGIN } from './api'
 
 let socket = null
 
 export const getSocket = () => {
   if (!socket) {
     const token = localStorage.getItem('sw_token')
-    socket = io('/', {
+    socket = io(API_ORIGIN || '/', {
       auth: { token },
       autoConnect: false,
     })

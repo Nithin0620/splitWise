@@ -1,7 +1,5 @@
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 // ─── HTML Template ───────────────────────────────────────────────────────────
 
 /**
@@ -281,6 +279,8 @@ const sendInviteEmail = async ({
   memberCount,
   inviteUrl,
 }) => {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   const html = buildInviteHtml({
     inviterName,
     inviterAvatar,

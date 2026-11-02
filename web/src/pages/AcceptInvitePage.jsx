@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import api from '../lib/api'
+import api, { API_BASE_URL } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 
@@ -50,7 +50,7 @@ export default function AcceptInvitePage() {
   const handleGoogleSignIn = () => {
     // Store token in sessionStorage so AuthCallback can pick it up after OAuth
     sessionStorage.setItem('pending_invite_token', token)
-    window.location.href = '/api/auth/google'
+    window.location.href = `${API_BASE_URL}/auth/google`
   }
 
   // ── Render ────────────────────────────────────────────────────────────────

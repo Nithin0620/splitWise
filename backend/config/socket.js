@@ -1,8 +1,12 @@
-const { Server } = require('socket.io');
-
 let io;
 
+const noopIO = {
+  to: () => ({ emit: () => {} }),
+};
+
 const initSocket = (server) => {
+  const { Server } = require('socket.io');
+
   io = new Server(server, {
     cors: {
       origin: process.env.CLIENT_URL || 'http://localhost:5173',
@@ -32,10 +36,8 @@ const initSocket = (server) => {
   return io;
 };
 
-// Get the io instance anywhere in the app
-const getIO = () => {
-  if (!io) throw new Error('Socket.IO not initialized');
-  return io;
-};
+// Get the io instance anywhere in the app.
+// On runtimes without Socket.IO (e.g. Cloudflare Workers) this is a no-op.
+const getIO = () => io || noopIO;
 
 module.exports = { initSocket, getIO };

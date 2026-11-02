@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "splitwise-api",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "alias": {
+    "body-parser": "./shims/body-parser.js"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
