@@ -1,0 +1,158 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
+import api from '../lib/api'
+import { useAuth } from '../context/AuthContext'
+import CreateTripModal from '../components/CreateTripModal'
+
+export default function DashboardPage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [trips, setTrips] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showCreate, setShowCreate] = useState(false)
+
+  const fetchTrips = async () => {
+    try {
+      const { data } = await api.get('/trips')
+      setTrips(data.data)
+    } catch {
+      toast.error('Failed to load trips')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchTrips() }, [])
+
+  const handleTripCreated = (trip) => {
+    setTrips((prev) => [trip, ...prev])
+    setShowCreate(false)
+    toast.success(`"${trip.name}" created!`)
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-end justify-between mb-8">
+        <div>
+          <p className="text-heading-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>
+            Good to see you,
+          </p>
+          <h1 className="text-heading-xl" style={{ color: 'var(--color-ink)' }}>
+            {user?.name?.split(' ')[0]}
+          </h1>
+        </div>
+        <button className="btn-primary" onClick={() => setShowCreate(true)}>
+          + New trip
+        </button>
+      </div>
+
+      {/* Trip grid */}
+      {loading ? (
+        <TripsSkeleton />
+      ) : trips.length === 0 ? (
+        <EmptyState onNew={() => setShowCreate(true)} />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {trips.map((trip) => (
+            <TripCard key={trip._id} trip={trip} onClick={() => navigate(`/trips/${trip._id}`)} />
+          ))}
+        </div>
+      )}
+
+      {showCreate && (
+        <CreateTripModal onClose={() => setShowCreate(false)} onCreated={handleTripCreated} />
+      )}
+    </div>
+  )
+}
+
+function TripCard({ trip, onClick }) {
+  const memberCount = trip.members?.length ?? 0
+  const initials = trip.name.slice(0, 2).toUpperCase()
+
+  return (
+    <button
+      onClick={onClick}
+      className="card p-6 text-left w-full cursor-pointer transition-all duration-150 hover:shadow-md"
+      style={{ border: '1px solid rgba(3,3,2,0.09)' }}
+    >
+      {/* Icon */}
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-sm font-semibold"
+        style={{ backgroundColor: 'var(--color-neutral)', color: 'var(--color-ink)' }}
+      >
+        {initials}
+      </div>
+
+      <h3 className="text-body-md-strong mb-1 truncate">{trip.name}</h3>
+
+      {trip.description && (
+        <p className="text-body-sm mb-3 line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>
+          {trip.description}
+        </p>
+      )}
+
+      <div className="flex items-center justify-between mt-3">
+        {/* Members */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex -space-x-1.5">
+            {trip.members?.slice(0, 4).map((m) =>
+              m.avatar ? (
+                <img key={m._id} src={m.avatar} alt={m.name}
+                     className="avatar avatar-sm ring-2 ring-white" />
+              ) : (
+                <div key={m._id}
+                     className="avatar avatar-sm ring-2 ring-white"
+                     style={{ backgroundColor: 'var(--color-neutral)', color: 'var(--color-text-muted)', fontSize: 10 }}>
+                  {m.name?.charAt(0)}
+                </div>
+              )
+            )}
+          </div>
+          <span className="text-caption" style={{ color: 'var(--color-text-muted)' }}>
+            {memberCount} {memberCount === 1 ? 'person' : 'people'}
+          </span>
+        </div>
+
+        {/* Currency + archive badge */}
+        <div className="flex items-center gap-2">
+          <span className="badge badge-neutral">{trip.currency}</span>
+          {trip.isArchived && <span className="badge badge-amber">Archived</span>}
+        </div>
+      </div>
+    </button>
+  )
+}
+
+function EmptyState({ onNew }) {
+  return (
+    <div className="text-center py-24">
+      <div className="text-6xl mb-4">🗺️</div>
+      <h2 className="text-heading-md mb-2" style={{ color: 'var(--color-ink)' }}>
+        No trips yet
+      </h2>
+      <p className="text-body-md mb-6" style={{ color: 'var(--color-text-muted)' }}>
+        Create your first trip and start splitting expenses with friends.
+      </p>
+      <button className="btn-primary" onClick={onNew}>
+        Create your first trip
+      </button>
+    </div>
+  )
+}
+
+function TripsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="card p-6 animate-pulse">
+          <div className="w-10 h-10 rounded-xl mb-4" style={{ backgroundColor: 'var(--color-neutral)' }} />
+          <div className="h-4 rounded mb-2" style={{ backgroundColor: 'var(--color-neutral)', width: '60%' }} />
+          <div className="h-3 rounded" style={{ backgroundColor: 'var(--color-neutral)', width: '80%' }} />
+        </div>
+      ))}
+    </div>
+  )
+}
