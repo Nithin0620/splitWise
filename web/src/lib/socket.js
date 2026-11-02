@@ -1,42 +1,78 @@
-import { io } from 'socket.io-client'
+import Ably from 'ably'
+import api from './api'
 
-const socketUrl = (import.meta.env.VITE_SOCKET_URL || '').replace(/\/+$/, '')
+let client = null
+let channel = null
+let currentTripId = null
+const listeners = new Map()
 
-const noopSocket = {
-  connected: false,
-  emit: () => {},
-  on: () => {},
-  off: () => {},
-  connect: () => {},
-  disconnect: () => {},
+const dispatch = (event, data) => {
+  for (const cb of listeners.get(event) || []) cb(data)
 }
 
-let socket = null
-
-export const getSocket = () => {
-  if (!socket) {
-    if (!socketUrl) {
-      socket = noopSocket
-    } else {
-      const token = localStorage.getItem('sw_token')
-      socket = io(socketUrl, {
-        auth: { token },
-        autoConnect: false,
-      })
-    }
+const getClient = () => {
+  if (!client) {
+    client = new Ably.Realtime({
+      authCallback: async (_tokenParams, callback) => {
+        try {
+          const { data } = await api.get('/realtime/token')
+          callback(null, data)
+        } catch (err) {
+          callback(err)
+        }
+      },
+    })
   }
-  return socket
+  return client
 }
 
-export const connectSocket = () => {
-  const s = getSocket()
-  if (s !== noopSocket && !s.connected) s.connect()
-  return s
+const leave = () => {
+  channel?.unsubscribe()
+  channel = null
+  currentTripId = null
 }
 
-export const disconnectSocket = () => {
-  if (socket && socket !== noopSocket && socket.connected) {
-    socket.disconnect()
-  }
-  socket = null
+const join = (tripId) => {
+  if (!localStorage.getItem('sw_token')) return
+
+  const id = String(tripId)
+  if (currentTripId === id && channel) return
+
+  leave()
+  currentTripId = id
+  channel = getClient().channels.get(`trip:${id}`)
+  channel.subscribe((message) => dispatch(message.name, message.data))
 }
+
+const socket = {
+  get connected() {
+    return client?.connection.state === 'connected'
+  },
+
+  emit(event, payload) {
+    if (event === 'join_trip') return join(payload)
+    if (event === 'leave_trip') return leave()
+  },
+
+  on(event, cb) {
+    if (!listeners.has(event)) listeners.set(event, new Set())
+    listeners.get(event).add(cb)
+  },
+
+  off(event, cb) {
+    listeners.get(event)?.delete(cb)
+  },
+
+  connect: () => getClient(),
+
+  disconnect() {
+    leave()
+    client?.close()
+    client = null
+    listeners.clear()
+  },
+}
+
+export const getSocket = () => socket
+export const connectSocket = () => socket
+export const disconnectSocket = () => socket.disconnect()

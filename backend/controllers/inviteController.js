@@ -2,7 +2,7 @@ const Invitation = require('../models/Invitation');
 const Trip = require('../models/Trip');
 const User = require('../models/User');
 const { sendInviteEmail } = require('../utils/email');
-const { getIO } = require('../config/socket');
+const { publishTripEvent } = require('../config/ably');
 
 // ─── Send Invite ──────────────────────────────────────────────────────────────
 
@@ -152,7 +152,7 @@ const acceptInvite = async (req, res) => {
   await trip.populate('createdBy', 'name email avatar');
 
   // Notify trip room
-  getIO().to(`trip:${trip._id}`).emit('member_added', { trip, newMember: req.user });
+  await publishTripEvent(trip._id, 'member_added', { trip, newMember: req.user });
 
   res.json({
     success: true,

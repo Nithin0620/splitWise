@@ -21,6 +21,7 @@ const tripRoutes = require('./routes/trips');
 const expenseRoutes = require('./routes/expenses');
 const settlementRoutes = require('./routes/settlements');
 const inviteRoutes = require('./routes/invites');
+const realtimeRoutes = require('./routes/realtime');
 
 // Passport config
 require('./config/passport');
@@ -84,16 +85,9 @@ app.use(async (req, res, next) => {
 });
 app.use(passport.initialize());
 
-// Cloudflare Workers cannot host Socket.IO. Fail fast instead of hanging the isolate.
-if (isWorker) {
-  app.use('/socket.io', (req, res) => {
-    res.status(501).json({ message: 'Socket.IO is not supported on this deployment' });
-  });
-}
-
 // Make sure MongoDB is connected before handling API requests.
 app.use(async (req, res, next) => {
-  if (req.method === 'OPTIONS' || req.path === '/api/health' || req.path.startsWith('/socket.io')) {
+  if (req.method === 'OPTIONS' || req.path === '/api/health') {
     return next();
   }
   try {
@@ -136,6 +130,7 @@ app.use('/api/trips', tripRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/settlements', settlementRoutes);
 app.use('/api/invites', inviteRoutes);
+app.use('/api/realtime', realtimeRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
@@ -145,9 +140,6 @@ app.use(errorHandler);
 
 // Local Node.js server only. Workers use httpServerHandler(server) instead.
 if (!isWorker) {
-  const { initSocket } = require('./config/socket');
-  initSocket(server);
-
   const PORT = process.env.PORT || 5000;
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);

@@ -4,7 +4,7 @@ const Expense = require('../models/Expense');
 const Settlement = require('../models/Settlement');
 const Invitation = require('../models/Invitation');
 const { computeTripBalances } = require('../utils/balanceCalculator');
-const { getIO } = require('../config/socket');
+const { publishTripEvent } = require('../config/ably');
 const { sendInviteEmail } = require('../utils/email');
 
 // @desc  Get all trips for current user
@@ -60,7 +60,7 @@ const updateTrip = async (req, res) => {
     .populate('members', 'name email avatar');
 
   // Notify all members of the update
-  getIO().to(`trip:${trip._id}`).emit('trip_updated', { trip });
+  await publishTripEvent(trip._id, 'trip_updated', { trip });
 
   res.json({ success: true, data: trip });
 };
@@ -75,7 +75,7 @@ const deleteTrip = async (req, res) => {
     Settlement.deleteMany({ trip: tripId }),
   ]);
 
-  getIO().to(`trip:${tripId}`).emit('trip_deleted', { tripId });
+  await publishTripEvent(tripId, 'trip_deleted', { tripId });
 
   res.json({ success: true, message: 'Trip deleted' });
 };
@@ -106,7 +106,7 @@ const addMember = async (req, res) => {
     await trip.populate('members', 'name email avatar');
     await trip.populate('createdBy', 'name email avatar');
 
-    getIO().to(`trip:${trip._id}`).emit('member_added', { trip, newMember: userToAdd });
+    await publishTripEvent(trip._id, 'member_added', { trip, newMember: userToAdd });
 
     return res.json({ success: true, data: trip });
   }
@@ -190,7 +190,7 @@ const removeMember = async (req, res) => {
   await trip.populate('members', 'name email avatar');
   await trip.populate('createdBy', 'name email avatar');
 
-  getIO().to(`trip:${trip._id}`).emit('member_removed', { trip, removedUserId: userId });
+  await publishTripEvent(trip._id, 'member_removed', { trip, removedUserId: userId });
 
   res.json({ success: true, data: trip });
 };

@@ -1,6 +1,6 @@
 const Expense = require('../models/Expense');
 const Trip = require('../models/Trip');
-const { getIO } = require('../config/socket');
+const { publishTripEvent } = require('../config/ably');
 
 /**
  * Compute equal-split amounts from total amount and participant list.
@@ -126,7 +126,7 @@ const createExpense = async (req, res) => {
   await expense.populate('createdBy', 'name email avatar');
 
   // Notify trip room of new expense
-  getIO().to(`trip:${trip._id}`).emit('expense_created', { expense });
+  await publishTripEvent(trip._id, 'expense_created', { expense });
 
   res.status(201).json({ success: true, data: expense });
 };
@@ -195,7 +195,7 @@ const updateExpense = async (req, res) => {
     .populate('createdBy', 'name email avatar');
 
   // Notify the trip room
-  getIO().to(`trip:${expense.trip}`).emit('expense_updated', { expense: updated });
+  await publishTripEvent(expense.trip, 'expense_updated', { expense: updated });
 
   res.json({ success: true, data: updated });
 };
@@ -221,7 +221,7 @@ const deleteExpense = async (req, res) => {
   await expense.deleteOne();
 
   // Notify the trip room
-  getIO().to(`trip:${tripId}`).emit('expense_deleted', { expenseId: req.params.id, tripId });
+  await publishTripEvent(tripId, 'expense_deleted', { expenseId: req.params.id, tripId });
 
   res.json({ success: true, message: 'Expense deleted' });
 };

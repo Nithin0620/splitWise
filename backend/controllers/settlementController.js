@@ -1,6 +1,6 @@
 const Settlement = require('../models/Settlement');
 const Trip = require('../models/Trip');
-const { getIO } = require('../config/socket');
+const { publishTripEvent } = require('../config/ably');
 
 // @desc    Get all settlements for a trip
 // @route   GET /api/settlements/trip/:tripId
@@ -58,7 +58,7 @@ const createSettlement = async (req, res) => {
   await settlement.populate('toUser', 'name email avatar');
 
   // Notify all members in the trip room
-  getIO().to(`trip:${trip._id}`).emit('settlement_created', { settlement });
+  await publishTripEvent(trip._id, 'settlement_created', { settlement });
 
   res.status(201).json({ success: true, data: settlement });
 };
@@ -98,7 +98,7 @@ const deleteSettlement = async (req, res) => {
   await settlement.deleteOne();
 
   // Notify the trip room
-  getIO().to(`trip:${tripId}`).emit('settlement_deleted', { settlementId, tripId });
+  await publishTripEvent(tripId, 'settlement_deleted', { settlementId, tripId });
 
   res.json({ success: true, message: 'Settlement deleted' });
 };

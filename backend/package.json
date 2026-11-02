@@ -14,6 +14,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "ably": "^2.30.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.9",
@@ -25,8 +26,7 @@
     "morgan": "^1.12.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "resend": "^4.5.1",
-    "socket.io": "^4.8.4"
+    "resend": "^4.5.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
