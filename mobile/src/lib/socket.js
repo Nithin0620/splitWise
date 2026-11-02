@@ -1,30 +1,80 @@
-import { io } from 'socket.io-client'
+import Ably from 'ably'
 import * as SecureStore from 'expo-secure-store'
-import { BASE_URL } from './api'
+import api from './api'
 
-// Strip /api suffix to get the socket server root
-const SOCKET_URL = BASE_URL.replace(/\/api$/, '')
+let client = null
+let channel = null
+let currentTripId = null
+const listeners = new Map()
 
-let socket = null
-
-export const getSocket = () => {
-  if (!socket) {
-    socket = io(SOCKET_URL, { autoConnect: false, transports: ['websocket'] })
-  }
-  return socket
+const dispatch = (event, data) => {
+  for (const cb of listeners.get(event) || []) cb(data)
 }
 
-export const connectSocket = async () => {
-  const s = getSocket()
+const getClient = () => {
+  if (!client) {
+    client = new Ably.Realtime({
+      authCallback: async (_tokenParams, callback) => {
+        try {
+          const { data } = await api.get('/realtime/token')
+          callback(null, data)
+        } catch (err) {
+          callback(err)
+        }
+      },
+    })
+  }
+  return client
+}
+
+const leave = () => {
+  channel?.unsubscribe()
+  channel = null
+  currentTripId = null
+}
+
+const join = async (tripId) => {
   const token = await SecureStore.getItemAsync('sw_token')
-  if (token) s.auth = { token }
-  if (!s.connected) s.connect()
-  return s
+  if (!token) return
+
+  const id = String(tripId)
+  if (currentTripId === id && channel) return
+
+  leave()
+  currentTripId = id
+  channel = getClient().channels.get(`trip:${id}`)
+  channel.subscribe((message) => dispatch(message.name, message.data))
 }
 
-export const disconnectSocket = () => {
-  if (socket?.connected) {
-    socket.disconnect()
-    socket = null
-  }
+const socket = {
+  get connected() {
+    return client?.connection.state === 'connected'
+  },
+
+  emit(event, payload) {
+    if (event === 'join_trip') return join(payload)
+    if (event === 'leave_trip') return leave()
+  },
+
+  on(event, cb) {
+    if (!listeners.has(event)) listeners.set(event, new Set())
+    listeners.get(event).add(cb)
+  },
+
+  off(event, cb) {
+    listeners.get(event)?.delete(cb)
+  },
+
+  connect: () => getClient(),
+
+  disconnect() {
+    leave()
+    client?.close()
+    client = null
+    listeners.clear()
+  },
 }
+
+export const getSocket = () => socket
+export const connectSocket = () => socket
+export const disconnectSocket = () => socket.disconnect()

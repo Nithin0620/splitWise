@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, Alert } from 'react-native'
-import { useAuthRequest, makeRedirectUri } from 'expo-auth-session'
-import { useEffect } from 'react'
+import { makeRedirectUri } from 'expo-auth-session'
 import * as WebBrowser from 'expo-web-browser'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../src/context/AuthContext'
@@ -10,7 +9,7 @@ import { BASE_URL } from '../../src/lib/api'
 
 WebBrowser.maybeCompleteAuthSession()
 
-// Backend OAuth endpoint — opens in system browser
+// Backend OAuth endpoint
 const GOOGLE_AUTH_URL = BASE_URL.replace('/api', '') + '/api/auth/google'
 
 export default function LoginScreen() {
@@ -18,18 +17,12 @@ export default function LoginScreen() {
 
   const handleGoogleLogin = async () => {
     try {
-      // Open the backend Google OAuth URL in the system browser
-      // After OAuth, the backend redirects to the CLIENT_URL/auth/callback?token=xxx
-      // For mobile, we need the backend to redirect to our deep link instead:
-      // splitwise://auth/callback?token=xxx
-      // Set GOOGLE_CALLBACK_URL in backend .env to point to backend /api/auth/google/callback
-      // and update the auth route to redirect to deep link for mobile clients.
-      // For now we open a web session and catch the redirect:
       const redirectUri = makeRedirectUri({ scheme: 'splitwise', path: 'auth/callback' })
-      const result = await WebBrowser.openAuthSessionAsync(
-        `${GOOGLE_AUTH_URL}?mobile=1&redirectUri=${encodeURIComponent(redirectUri)}`,
-        redirectUri
-      )
+      
+      // Pass redirectUri as query param - backend will use it for redirect
+      const authUrl = `${GOOGLE_AUTH_URL}?redirectUri=${encodeURIComponent(redirectUri)}`
+      
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri)
 
       if (result.type === 'success' && result.url) {
         const url = new URL(result.url)
@@ -39,6 +32,8 @@ export default function LoginScreen() {
         } else {
           Alert.alert('Sign in failed', 'No token received. Please try again.')
         }
+      } else if (result.type === 'cancel') {
+        // User cancelled
       }
     } catch (err) {
       Alert.alert('Sign in failed', err.message)

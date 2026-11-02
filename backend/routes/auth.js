@@ -9,7 +9,17 @@ const router = express.Router();
 // @desc    Initiate Google OAuth flow
 router.get(
   '/google',
-  passport.authenticate('google', { scope: ['profile', 'email'], session: false })
+  (req, res, next) => {
+    // Use simple state to indicate mobile request
+    // Google OAuth limits state size, so we use a simple flag
+    const { redirectUri } = req.query;
+    const state = redirectUri ? 'mobile' : undefined;
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+      session: false,
+      state,
+    })(req, res, next);
+  }
 );
 
 // @route   GET /api/auth/google/callback
@@ -21,9 +31,15 @@ router.get(
     const { generateToken } = require('../utils/token');
     const token = generateToken(req.user._id);
 
-    // Redirect to frontend with token in query param
-    // Frontend stores this in localStorage/cookie
-    res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
+    // Check if this is a mobile request via state parameter
+    let redirectUrl = `${process.env.CLIENT_URL}/auth/callback?token=${token}`;
+    
+    // If state is 'mobile', redirect to deep link
+    if (req.query.state === 'mobile') {
+      redirectUrl = `splitwise://auth/callback?token=${token}`;
+    }
+
+    res.redirect(redirectUrl);
   }
 );
 
