@@ -133,7 +133,12 @@ app.use('/api/invites', inviteRoutes);
 app.use('/api/realtime', realtimeRoutes);
 
 // Health check
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) => res.json({
+  status: 'ok',
+  uptime: Math.floor(process.uptime()),
+  timestamp: new Date().toISOString(),
+  env: process.env.NODE_ENV || 'development',
+}));
 
 // Global error handler
 app.use(errorHandler);
