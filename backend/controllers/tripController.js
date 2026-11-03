@@ -206,8 +206,10 @@ const getTripBalances = async (req, res) => {
 
   const { netBalances, transactions } = computeTripBalances(expenses, settlements);
 
-  // Enrich netBalances with user info
-  const members = await User.find({ _id: { $in: Object.keys(netBalances) } }, 'name email avatar');
+  // Enrich netBalances with user info (include past members still present in
+  // expenses/settlements so their names resolve).
+  const memberIds = [...new Set([...req.trip.members.map(String), ...Object.keys(netBalances)])];
+  const members = await User.find({ _id: { $in: memberIds } }, 'name email avatar');
   const memberMap = {};
   members.forEach((m) => (memberMap[m._id.toString()] = m));
 
@@ -223,11 +225,49 @@ const getTripBalances = async (req, res) => {
     amount: t.amount,
   }));
 
+  // Per-member spending. Each member's own share of expenses is only counted
+  // once it is settled — i.e. covered by what they paid plus what they have
+  // settled with others (net of settlements received).
+  const currentMemberIds = req.trip.members.map(String);
+  const spending = {};
+  currentMemberIds.forEach((id) => {
+    spending[id] = { ownShare: 0, paid: 0, settledOut: 0, settledIn: 0 };
+  });
+
+  for (const expense of expenses) {
+    const paidById = expense.paidBy._id?.toString() || expense.paidBy.toString();
+    if (spending[paidById]) spending[paidById].paid += expense.amount;
+
+    for (const split of expense.splits) {
+      const userId = split.user._id?.toString() || split.user.toString();
+      if (spending[userId]) spending[userId].ownShare += split.amount;
+    }
+  }
+
+  for (const settlement of settlements) {
+    const fromId = settlement.fromUser._id?.toString() || settlement.fromUser.toString();
+    const toId = settlement.toUser._id?.toString() || settlement.toUser.toString();
+    if (spending[fromId]) spending[fromId].settledOut += settlement.amount;
+    if (spending[toId]) spending[toId].settledIn += settlement.amount;
+  }
+
+  const memberSpending = currentMemberIds.map((id) => {
+    const { ownShare, paid, settledOut, settledIn } = spending[id];
+    const settledShare = Math.min(ownShare, Math.max(0, paid + settledOut - settledIn));
+    return {
+      user: memberMap[id] || { _id: id },
+      totalSpent: Math.round(settledShare * 100) / 100,
+      totalShare: Math.round(ownShare * 100) / 100,
+      isFullySettled: settledShare >= ownShare - 0.01,
+    };
+  });
+
   res.json({
     success: true,
     data: {
       balances: balanceSummary,
       transactions: enrichedTransactions,
+      spending: memberSpending,
       totalExpenses: expenses.reduce((sum, e) => sum + e.amount, 0),
       totalSettled: settlements.reduce((sum, s) => sum + s.amount, 0),
     },

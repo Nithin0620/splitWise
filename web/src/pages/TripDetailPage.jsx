@@ -157,7 +157,7 @@ export default function TripDetailPage() {
           <div>
             <div className="flex gap-1 mb-4 p-1 rounded-full w-fit"
                  style={{ backgroundColor: 'var(--color-neutral)' }}>
-              {['expenses', 'balances'].map((t) => (
+              {['expenses', 'spending', 'balances'].map((t) => (
                 <button key={t} onClick={() => setTab(t)}
                         className="px-5 py-1.5 rounded-full text-body-sm font-medium transition-all capitalize"
                         style={{
@@ -171,7 +171,7 @@ export default function TripDetailPage() {
               ))}
             </div>
 
-            {tab === 'expenses' ? (
+            {tab === 'expenses' && (
               <ExpenseList
                 expenses={expenses}
                 userId={user?._id}
@@ -179,7 +179,11 @@ export default function TripDetailPage() {
                 onEdit={(e) => { setEditingExpense(e); setShowAddExpense(true) }}
                 onDelete={deleteExpense}
               />
-            ) : (
+            )}
+            {tab === 'spending' && (
+              <SpendingTab spending={balances?.spending} currency={trip.currency} />
+            )}
+            {tab === 'balances' && (
               <BalancesTab
                 balances={balances}
                 settlements={settlements}
@@ -311,6 +315,41 @@ function ExpenseList({ expenses, userId, currency, onEdit, onDelete }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function SpendingTab({ spending, currency }) {
+  if (!spending?.length) {
+    return (
+      <div className="text-center py-16">
+        <div className="text-5xl mb-3">💸</div>
+        <p className="text-body-md" style={{ color: 'var(--color-text-muted)' }}>No spending yet</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-caption mb-1" style={{ color: 'var(--color-text-muted)' }}>
+        Amount each member has settled so far
+      </p>
+      {spending.map((s) => (
+        <div key={s.user?._id} className="card p-4 flex items-center gap-3">
+          <Avatar user={s.user} size="sm" />
+          <div className="flex-1 min-w-0">
+            <p className="text-body-sm font-medium truncate">{s.user?.name}</p>
+            {!s.isFullySettled && s.totalShare > 0 && (
+              <p className="text-caption" style={{ color: 'var(--color-text-muted)' }}>
+                {currency} {s.totalSpent.toFixed(2)} of {currency} {s.totalShare.toFixed(2)} settled
+              </p>
+            )}
+          </div>
+          <span className="text-body-md-strong">
+            {currency} {s.totalSpent.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+          </span>
+        </div>
+      ))}
     </div>
   )
 }

@@ -138,7 +138,7 @@ export default function TripDetailScreen() {
 
         {/* Tabs */}
         <View style={styles.tabRow}>
-          {['expenses', 'balances', 'members'].map((t) => (
+          {['expenses', 'spending', 'balances', 'members'].map((t) => (
             <TouchableOpacity key={t} onPress={() => setTab(t)}
               style={[styles.tab, tab === t && styles.tabActive]}>
               <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
@@ -153,6 +153,9 @@ export default function TripDetailScreen() {
           <ExpensesTab expenses={expenses} userId={user?._id} currency={trip?.currency}
             tripId={tripId} onDelete={deleteExpense} onEdit={(e) =>
               router.push({ pathname: `/trips/${tripId}/edit-expense`, params: { expenseId: e._id } })} />
+        )}
+        {tab === 'spending' && (
+          <SpendingTab spending={balances?.spending} currency={trip?.currency} />
         )}
         {tab === 'balances' && (
           <BalancesTab balances={balances} settlements={settlements} currency={trip?.currency}
@@ -212,6 +215,37 @@ function ExpensesTab({ expenses, userId, currency, tripId, onDelete, onEdit }) {
           </Card>
         )
       })}
+    </View>
+  )
+}
+
+function SpendingTab({ spending, currency }) {
+  if (!spending?.length) {
+    return <EmptyState emoji="💸" title="No spending yet" subtitle="Add an expense to see member totals." />
+  }
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <Text style={{ ...type.caption, color: colors.textMuted }}>
+        Amount each member has settled so far
+      </Text>
+      {spending.map((s) => (
+        <Card key={s.user?._id} style={{ padding: spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <Avatar user={s.user} size="sm" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ ...type.bodyMdStrong }}>{s.user?.name}</Text>
+              {!s.isFullySettled && s.totalShare > 0 && (
+                <Text style={{ ...type.caption, color: colors.textMuted }}>
+                  {currency} {s.totalSpent.toFixed(2)} of {currency} {s.totalShare.toFixed(2)} settled
+                </Text>
+              )}
+            </View>
+            <Text style={{ ...type.bodyMdStrong }}>
+              {currency} {s.totalSpent.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+            </Text>
+          </View>
+        </Card>
+      ))}
     </View>
   )
 }
