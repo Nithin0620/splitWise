@@ -4,7 +4,9 @@ import api from './api'
 
 let client = null
 let channel = null
+let userChannel = null
 let currentTripId = null
+let currentUserId = null
 const listeners = new Map()
 
 const dispatch = (event, data) => {
@@ -33,6 +35,25 @@ const leave = () => {
   currentTripId = null
 }
 
+const leaveUser = () => {
+  userChannel?.unsubscribe()
+  userChannel = null
+  currentUserId = null
+}
+
+const joinUser = async (userId) => {
+  const token = await SecureStore.getItemAsync('sw_token')
+  if (!token || !userId) return
+
+  const id = String(userId)
+  if (currentUserId === id && userChannel) return
+
+  leaveUser()
+  currentUserId = id
+  userChannel = getClient().channels.get(`user:${id}`)
+  userChannel.subscribe((message) => dispatch(message.name, message.data))
+}
+
 const join = async (tripId) => {
   const token = await SecureStore.getItemAsync('sw_token')
   if (!token) return
@@ -54,6 +75,8 @@ const socket = {
   emit(event, payload) {
     if (event === 'join_trip') return join(payload)
     if (event === 'leave_trip') return leave()
+    if (event === 'join_user') return joinUser(payload)
+    if (event === 'leave_user') return leaveUser()
   },
 
   on(event, cb) {
@@ -69,6 +92,7 @@ const socket = {
 
   disconnect() {
     leave()
+    leaveUser()
     client?.close()
     client = null
     listeners.clear()

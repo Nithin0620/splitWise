@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Alert } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import { makeRedirectUri } from 'expo-auth-session'
 import * as WebBrowser from 'expo-web-browser'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -6,6 +6,7 @@ import { useAuth } from '../../src/context/AuthContext'
 import { Button } from '../../src/components/ui'
 import { colors, spacing, type } from '../../src/theme'
 import { BASE_URL } from '../../src/lib/api'
+import { useDialog } from '../../src/components/Dialog'
 
 WebBrowser.maybeCompleteAuthSession()
 
@@ -14,6 +15,7 @@ const GOOGLE_AUTH_URL = BASE_URL.replace('/api', '') + '/api/auth/google'
 
 export default function LoginScreen() {
   const { login } = useAuth()
+  const dialog = useDialog()
 
   const handleGoogleLogin = async () => {
     try {
@@ -30,13 +32,13 @@ export default function LoginScreen() {
         if (token) {
           await login(token)
         } else {
-          Alert.alert('Sign in failed', 'No token received. Please try again.')
+          dialog.alert('Sign in failed', 'No token received. Please try again.', { variant: 'error' })
         }
       } else if (result.type === 'cancel') {
         // User cancelled
       }
     } catch (err) {
-      Alert.alert('Sign in failed', err.message)
+      dialog.alert('Sign in failed', err.message, { variant: 'error' })
     }
   }
 

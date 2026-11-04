@@ -17,6 +17,7 @@ router.get('/token', protect, async (req, res) => {
     clientId: String(req.user._id),
     capability: {
       'trip:*': ['subscribe'],
+      [`user:${req.user._id}`]: ['subscribe'],
     },
     ttl: 60 * 60 * 1000,
   });

@@ -1,24 +1,29 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, RefreshControl, Modal, ScrollView, Alert,
+  StyleSheet, RefreshControl, Modal, ScrollView,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import api from '../../src/lib/api'
 import { useAuth } from '../../src/context/AuthContext'
-import { Card, Button, Input, Badge, Avatar, EmptyState, LoadingScreen } from '../../src/components/ui'
+import { Card, Button, Input, Badge, Avatar, EmptyState, LoadingScreen, DateField } from '../../src/components/ui'
+import NotificationBell from '../../src/components/NotificationBell'
+import { useDialog } from '../../src/components/Dialog'
 import { colors, spacing, type, shadow } from '../../src/theme'
+import { formatDateRange } from '../../src/lib/date'
 
 const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'JPY', 'AED']
 
 export default function TripsScreen() {
   const { user } = useAuth()
   const router = useRouter()
+  const dialog = useDialog()
   const [trips, setTrips]         = useState([])
   const [loading, setLoading]     = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
+  const [filter, setFilter] = useState('active')
 
   const fetchTrips = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -26,12 +31,12 @@ export default function TripsScreen() {
       const { data } = await api.get('/trips')
       setTrips(data.data)
     } catch {
-      Alert.alert('Error', 'Failed to load trips')
+      dialog.alert('Error', 'Failed to load trips', { variant: 'error' })
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [])
+  }, [dialog])
 
   useEffect(() => { fetchTrips() }, [fetchTrips])
 
@@ -44,6 +49,15 @@ export default function TripsScreen() {
 
   if (loading) return <LoadingScreen />
 
+  const visibleTrips = trips.filter((t) =>
+    filter === 'all' ? true : filter === 'archived' ? t.isArchived : !t.isArchived
+  )
+  const FILTERS = [
+    { key: 'active', label: 'Active' },
+    { key: 'archived', label: 'Archived' },
+    { key: 'all', label: 'All' },
+  ]
+
   return (
     <SafeAreaView style={styles.safe}>
       {/* Header */}
@@ -52,19 +66,40 @@ export default function TripsScreen() {
           <Text style={styles.greeting}>Good to see you,</Text>
           <Text style={styles.name}>{user?.name?.split(' ')[0]}</Text>
         </View>
-        <Avatar user={user} size="md" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <NotificationBell />
+          <Avatar user={user} size="md" />
+        </View>
+      </View>
+
+      {/* Filters */}
+      <View style={styles.filterRow}>
+        {FILTERS.map((f) => (
+          <TouchableOpacity key={f.key} onPress={() => setFilter(f.key)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: filter === f.key }}
+            style={[styles.filterChip, filter === f.key && styles.filterChipActive]}>
+            <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>
+              {f.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Trip list */}
       <FlatList
-        data={trips}
+        data={visibleTrips}
         keyExtractor={(t) => t._id}
-        contentContainerStyle={[styles.list, trips.length === 0 && { flex: 1 }]}
+        contentContainerStyle={[styles.list, visibleTrips.length === 0 && { flex: 1 }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.ink} />}
         ListEmptyComponent={
-          <EmptyState emoji="🗺️" title="No trips yet"
-            subtitle="Create your first trip and start splitting expenses."
-            action="Create trip" onAction={() => setShowCreate(true)} />
+          <EmptyState emoji={filter === 'archived' ? '📦' : '🗺️'}
+            title={filter === 'archived' ? 'No archived trips' : trips.length ? 'Nothing here' : 'No trips yet'}
+            subtitle={filter === 'archived'
+              ? 'Archived trips will appear here once you tuck one away.'
+              : 'Create your first trip and start splitting expenses.'}
+            action={filter === 'archived' ? undefined : 'Create trip'}
+            onAction={() => setShowCreate(true)} />
         }
         renderItem={({ item }) => (
           <TripCard trip={item} onPress={() => router.push(`/trips/${item._id}`)} />
@@ -95,6 +130,11 @@ function TripCard({ trip, onPress }) {
           {trip.description ? (
             <Text style={styles.tripDesc} numberOfLines={1}>{trip.description}</Text>
           ) : null}
+          {formatDateRange(trip.startDate, trip.endDate) ? (
+            <Text style={styles.tripDates} numberOfLines={1}>
+              {formatDateRange(trip.startDate, trip.endDate)}
+            </Text>
+          ) : null}
           <View style={styles.tripMeta}>
             {/* Member avatars */}
             <View style={styles.avatarStack}>
@@ -117,20 +157,25 @@ function TripCard({ trip, onPress }) {
 }
 
 function CreateTripModal({ visible, onClose, onCreated }) {
-  const [form, setForm]   = useState({ name: '', description: '', currency: 'INR' })
+  const dialog = useDialog()
+  const EMPTY = { name: '', description: '', currency: 'INR', startDate: null, endDate: null }
+  const [form, setForm]   = useState(EMPTY)
   const [saving, setSaving] = useState(false)
 
   const set = (k) => (v) => setForm((p) => ({ ...p, [k]: v }))
 
   const handleCreate = async () => {
-    if (!form.name.trim()) return Alert.alert('Required', 'Trip name is required')
+    if (!form.name.trim()) return dialog.alert('Required', 'Trip name is required')
+    if (form.startDate && form.endDate && new Date(form.endDate) < new Date(form.startDate)) {
+      return dialog.alert('Check dates', 'End date cannot be before start date')
+    }
     setSaving(true)
     try {
       const { data } = await api.post('/trips', { ...form, name: form.name.trim() })
       onCreated(data.data)
-      setForm({ name: '', description: '', currency: 'INR' })
+      setForm(EMPTY)
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Failed to create trip')
+      dialog.alert('Error', err.response?.data?.message || 'Failed to create trip', { variant: 'error' })
     } finally {
       setSaving(false)
     }
@@ -146,6 +191,13 @@ function CreateTripModal({ visible, onClose, onCreated }) {
             placeholder="e.g. Goa 2026" autoFocus />
           <Input label="Description" value={form.description} onChangeText={set('description')}
             placeholder="Optional" multiline numberOfLines={2} />
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <DateField label="Start date" value={form.startDate} onChange={set('startDate')}
+              placeholder="Optional" style={{ flex: 1 }} />
+            <DateField label="End date" value={form.endDate} onChange={set('endDate')}
+              placeholder="Optional" minimumDate={form.startDate ? new Date(form.startDate) : undefined}
+              style={{ flex: 1 }} />
+          </View>
           <View>
             <Text style={styles.inputLabel}>Currency</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -184,6 +236,14 @@ const styles = StyleSheet.create({
   tripInitialsText: { ...type.bodyMdStrong, color: colors.ink },
   tripName:  { ...type.bodyMdStrong, color: colors.ink, marginBottom: 2 },
   tripDesc:  { ...type.bodySm, color: colors.textMuted, marginBottom: spacing.xs },
+  tripDates: { ...type.caption, color: colors.textMuted, marginBottom: spacing.xs },
+  filterRow: { flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.xl,
+               paddingBottom: spacing.md },
+  filterChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: 9999,
+                borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white },
+  filterChipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+  filterText: { ...type.captionStrong, color: colors.textMuted },
+  filterTextActive: { color: colors.white },
   tripMeta:  { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   avatarStack: { flexDirection: 'row' },
   memberCount: { ...type.caption, color: colors.textMuted },

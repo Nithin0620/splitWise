@@ -84,15 +84,70 @@ const simplifyDebts = (balances) => {
 };
 
 /**
+ * Compute direct (un-simplified) pairwise debts between members.
+ * Each expense creates an obligation from every split participant to the
+ * payer; settlements offset those obligations. Returns the same
+ * transaction shape as simplifyDebts: [{ from, to, amount }].
+ */
+const computePairwiseDebts = (expenses, settlements) => {
+  // signed[`${a}|${b}`] = net amount a owes b (negative means b owes a).
+  const signed = {};
+  const add = (from, to, amount) => {
+    const key = `${from}|${to}`;
+    signed[key] = (signed[key] || 0) + amount;
+  };
+
+  for (const expense of expenses) {
+    const paidById = expense.paidBy._id?.toString() || expense.paidBy.toString();
+    for (const split of expense.splits) {
+      const userId = split.user._id?.toString() || split.user.toString();
+      if (userId !== paidById) add(userId, paidById, split.amount);
+    }
+  }
+
+  for (const settlement of settlements) {
+    const fromId = settlement.fromUser._id?.toString() || settlement.fromUser.toString();
+    const toId = settlement.toUser._id?.toString() || settlement.toUser.toString();
+    add(fromId, toId, -settlement.amount);
+  }
+
+  const transactions = [];
+  const seen = new Set();
+  for (const key of Object.keys(signed)) {
+    const [a, b] = key.split('|');
+    // Only process each unordered pair once (skip self-pairs).
+    if (a === b) continue;
+    const pairKey = [a, b].sort().join('|');
+    if (seen.has(pairKey)) continue;
+    seen.add(pairKey);
+
+    const net = Math.round(((signed[`${a}|${b}`] || 0) - (signed[`${b}|${a}`] || 0)) * 100) / 100;
+    if (net > 0.01) transactions.push({ from: a, to: b, amount: net });
+    else if (net < -0.01) transactions.push({ from: b, to: a, amount: -net });
+  }
+
+  return transactions;
+};
+
+/**
  * Full balance summary for a trip.
  * Returns:
  *   - netBalances: { userId: amount }
  *   - transactions: [{ from, to, amount }]
+ *   - simplified: whether the transactions were debt-simplified
  */
-const computeTripBalances = (expenses, settlements) => {
+const computeTripBalances = (expenses, settlements, options = {}) => {
+  const { simplify = true } = options;
   const netBalances = computeNetBalances(expenses, settlements);
-  const transactions = simplifyDebts(netBalances);
-  return { netBalances, transactions };
+  const transactions = simplify
+    ? simplifyDebts(netBalances)
+    : computePairwiseDebts(expenses, settlements);
+  return { netBalances, transactions, simplified: simplify };
 };
 
-module.exports = { computeNetBalances, simplifyDebts, computeTripBalances };
+module.exports = {
+  computeNetBalances,
+  simplifyDebts,
+  computePairwiseDebts,
+  computeTripBalances,
+};

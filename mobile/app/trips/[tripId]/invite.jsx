@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import api from '../../../src/lib/api'
 import { Button, Input, SectionLabel, Badge, Card } from '../../../src/components/ui'
+import { useDialog } from '../../../src/components/Dialog'
 import { colors, spacing, type } from '../../../src/theme'
 
 export default function InviteScreen() {
   const { tripId } = useLocalSearchParams()
   const router = useRouter()
+  const dialog = useDialog()
   const [email, setEmail]     = useState('')
   const [sending, setSending] = useState(false)
   const [invites, setInvites] = useState([])
@@ -26,33 +28,38 @@ export default function InviteScreen() {
 
   const handleSend = async () => {
     const trimmed = email.trim().toLowerCase()
-    if (!trimmed) return Alert.alert('Required', 'Enter an email address')
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return Alert.alert('Invalid', 'Enter a valid email')
+    if (!trimmed) return dialog.alert('Required', 'Enter an email address')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return dialog.alert('Invalid', 'Enter a valid email', { variant: 'error' })
     setSending(true)
     try {
       const { data } = await api.post(`/trips/${tripId}/members`, { email: trimmed })
       if (data.invited) {
-        Alert.alert('Invite sent!', `An invitation email was sent to ${trimmed}`)
+        dialog.alert('Invite sent!', `An invitation email was sent to ${trimmed}`, { variant: 'success' })
       } else {
-        Alert.alert('Added!', `${trimmed} was added to the trip.`)
+        dialog.alert('Added!', `${trimmed} was added to the trip.`, { variant: 'success' })
       }
       setEmail('')
       // Refresh invites
       api.get(`/invites/trips/${tripId}`).then(({ data }) => setInvites(data.data))
       router.back()
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Failed to invite')
+      dialog.alert('Error', err.response?.data?.message || 'Failed to invite', { variant: 'error' })
     } finally { setSending(false) }
   }
 
-  const cancelInvite = (id) => {
-    Alert.alert('Cancel invite?', '', [
-      { text: 'Keep', style: 'cancel' },
-      { text: 'Cancel invite', style: 'destructive', onPress: async () => {
-        await api.delete(`/invites/${id}`)
-        setInvites((p) => p.filter((i) => i._id !== id))
-      }},
-    ])
+  const cancelInvite = async (id) => {
+    const ok = await dialog.confirm(
+      'Cancel invite?',
+      'The invitation link will stop working.',
+      { confirmText: 'Cancel invite', cancelText: 'Keep', destructive: true }
+    )
+    if (!ok) return
+    try {
+      await api.delete(`/invites/${id}`)
+      setInvites((p) => p.filter((i) => i._id !== id))
+    } catch (err) {
+      dialog.alert('Error', err.response?.data?.message || 'Failed to cancel invite', { variant: 'error' })
+    }
   }
 
   const pending = invites.filter((i) => i.status === 'pending')

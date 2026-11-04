@@ -10,6 +10,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
+const mongoose = require('mongoose');
 
 const connectDB = require('./config/db');
 const { disconnectDB } = connectDB;
@@ -22,6 +23,8 @@ const expenseRoutes = require('./routes/expenses');
 const settlementRoutes = require('./routes/settlements');
 const inviteRoutes = require('./routes/invites');
 const realtimeRoutes = require('./routes/realtime');
+const currencyRoutes = require('./routes/currencies');
+const notificationRoutes = require('./routes/notifications');
 
 // Passport config
 require('./config/passport');
@@ -29,13 +32,28 @@ require('./config/passport');
 const app = express();
 const server = http.createServer(app);
 
+// Respect proxy headers (Koyeb, Render, Fly, Cloudflare) for client IPs and
+// secure-cookie detection.
+app.set('trust proxy', 1);
+
 // Cloudflare Workers cannot host Socket.IO; it uses a no-op emitter there.
 const isWorker = process.env.CF_WORKER === '1';
 
 // Middleware
 app.use(helmet());
+
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
   credentials: true,
 }));
 if (!isWorker) app.use(morgan('dev'));
@@ -131,14 +149,26 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/settlements', settlementRoutes);
 app.use('/api/invites', inviteRoutes);
 app.use('/api/realtime', realtimeRoutes);
+app.use('/api/currencies', currencyRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
-app.get('/api/health', (req, res) => res.json({
-  status: 'ok',
-  uptime: Math.floor(process.uptime()),
-  timestamp: new Date().toISOString(),
-  env: process.env.NODE_ENV || 'development',
-}));
+app.get('/api/health', (req, res) => {
+  const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+  const dbState = states[mongoose.connection.readyState] || 'unknown';
+  res.json({
+    status: dbState === 'connected' || dbState === 'connecting' ? 'ok' : 'degraded',
+    db: dbState,
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development',
+  });
+});
+
+// Unknown API routes return JSON instead of the HTML default.
+app.use((req, res) => {
+  res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });
+});
 
 // Global error handler
 app.use(errorHandler);
@@ -147,7 +177,43 @@ app.use(errorHandler);
 if (!isWorker) {
   const PORT = process.env.PORT || 5000;
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
+  });
+
+  // Generate due recurring expenses once an hour.
+  const { startRecurringScheduler, stopRecurringScheduler } = require('./utils/recurring');
+  startRecurringScheduler();
+
+  let shuttingDown = false;
+  const shutdown = async (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`${signal} received — shutting down`);
+
+    stopRecurringScheduler();
+    const force = setTimeout(() => process.exit(1), 10_000);
+    if (force.unref) force.unref();
+
+    server.close(async () => {
+      try {
+        await disconnectDB();
+        console.log('Shutdown complete');
+        process.exit(0);
+      } catch (err) {
+        console.error('Error during shutdown:', err.message);
+        process.exit(1);
+      }
+    });
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('unhandledRejection', (reason) => {
+    console.error('Unhandled promise rejection:', reason);
+  });
+  process.on('uncaughtException', (err) => {
+    console.error('Uncaught exception:', err);
+    shutdown('uncaughtException');
   });
 }
 

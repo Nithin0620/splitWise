@@ -3,6 +3,7 @@ const Trip = require('../models/Trip');
 const User = require('../models/User');
 const { sendInviteEmail } = require('../utils/email');
 const { publishTripEvent } = require('../config/ably');
+const { notifyTripMembers } = require('../utils/notifications');
 
 // ─── Send Invite ──────────────────────────────────────────────────────────────
 
@@ -153,6 +154,12 @@ const acceptInvite = async (req, res) => {
 
   // Notify trip room
   await publishTripEvent(trip._id, 'member_added', { trip, newMember: req.user });
+  await notifyTripMembers(trip, req.user._id, {
+    type: 'member_added',
+    title: 'New trip member',
+    body: `${req.user.name} joined "${trip.name}"`,
+    data: { tripId: trip._id },
+  });
 
   res.json({
     success: true,

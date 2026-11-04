@@ -1,17 +1,22 @@
+import { useState } from 'react'
 import {
-  View, Text, TouchableOpacity, TextInput,
+  View, Text, TouchableOpacity, TextInput, Platform, Modal,
   ActivityIndicator, StyleSheet, Image,
 } from 'react-native'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import { colors, spacing, radius, type, shadow } from '../theme'
+import { formatDate } from '../lib/date'
 
 export function Button({ title, onPress, variant = 'primary', disabled, loading, style, icon }) {
-  const s = variant === 'primary' ? styles.btnPrimary : styles.btnGhost
-  const t = variant === 'primary' ? styles.btnPrimaryText : styles.btnGhostText
+  const s = variant === 'primary' ? styles.btnPrimary
+    : variant === 'danger' ? styles.btnDanger
+    : styles.btnGhost
+  const t = variant === 'ghost' ? styles.btnGhostText : styles.btnPrimaryText
   return (
     <TouchableOpacity onPress={onPress} disabled={disabled || loading}
       activeOpacity={0.8} style={[s, disabled && { opacity: 0.45 }, style]}>
       {loading
-        ? <ActivityIndicator color={variant === 'primary' ? colors.white : colors.ink} size="small" />
+        ? <ActivityIndicator color={variant === 'ghost' ? colors.ink : colors.white} size="small" />
         : <>{icon && <Text style={{ marginRight: 6, fontSize: 15 }}>{icon}</Text>}
             <Text style={t}>{title}</Text></>}
     </TouchableOpacity>
@@ -44,6 +49,77 @@ export function Input({ label, value, onChangeText, placeholder, keyboardType,
         multiline={multiline} numberOfLines={numberOfLines} autoFocus={autoFocus}
         returnKeyType={returnKeyType} onSubmitEditing={onSubmitEditing}
         style={[styles.input, multiline && { minHeight: 80, textAlignVertical: 'top' }]} />
+    </View>
+  )
+}
+
+export function DateField({
+  label, value, onChange, placeholder = 'Select date',
+  minimumDate, maximumDate, style, clearable = true,
+}) {
+  const [show, setShow] = useState(false)
+  const dateValue = value ? new Date(value) : new Date()
+  if (Number.isNaN(dateValue.getTime())) dateValue.setTime(Date.now())
+
+  const handleChange = (event, selected) => {
+    if (Platform.OS === 'android') {
+      setShow(false)
+      if (event?.type === 'set' && selected) onChange(selected.toISOString())
+    } else if (selected) {
+      onChange(selected.toISOString())
+    }
+  }
+
+  return (
+    <View style={style}>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => setShow(true)}
+        accessibilityRole="button"
+        accessibilityLabel={label ? `${label}: ${value ? formatDate(value) : placeholder}` : placeholder}
+        style={styles.dateField}
+      >
+        <Text style={{ ...type.bodyMd, color: value ? colors.ink : colors.textMuted }}>
+          {value ? formatDate(value) : placeholder}
+        </Text>
+        <Text style={{ fontSize: 16 }}>📅</Text>
+      </TouchableOpacity>
+
+      {show && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={dateValue}
+          mode="date"
+          onChange={handleChange}
+          minimumDate={minimumDate}
+          maximumDate={maximumDate}
+        />
+      )}
+
+      {show && Platform.OS !== 'android' && (
+        <Modal transparent animationType="fade" visible onRequestClose={() => setShow(false)}>
+          <View style={styles.pickerOverlay}>
+            <View style={styles.pickerCard}>
+              <Text style={styles.pickerTitle}>{label || 'Select date'}</Text>
+              <DateTimePicker
+                value={dateValue}
+                mode="date"
+                display="spinner"
+                onChange={handleChange}
+                minimumDate={minimumDate}
+                maximumDate={maximumDate}
+              />
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                {clearable && (
+                  <Button title="Clear" variant="ghost" style={{ flex: 1 }}
+                    onPress={() => { onChange(null); setShow(false) }} />
+                )}
+                <Button title="Done" style={{ flex: 1 }} onPress={() => setShow(false)} />
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   )
 }
@@ -109,6 +185,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl, ...shadow.sm,
   },
   btnPrimaryText: { ...type.bodyMdStrong, color: colors.white },
+  btnDanger: {
+    height: 52, borderRadius: radius.button, backgroundColor: colors.danger,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: spacing.xl, ...shadow.sm,
+  },
   btnGhost: {
     height: 44, borderRadius: radius.button, backgroundColor: 'transparent',
     borderWidth: 1, borderColor: colors.border,
@@ -133,4 +214,19 @@ const styles = StyleSheet.create({
   },
   label: { ...type.headingXs, color: colors.textMuted, marginBottom: 6 },
   sectionLabel: { ...type.headingXs, color: colors.textMuted, marginBottom: spacing.sm },
+  dateField: {
+    backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.input, paddingHorizontal: spacing.md,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    minHeight: 44,
+  },
+  pickerOverlay: {
+    flex: 1, backgroundColor: 'rgba(3,3,2,0.35)',
+    alignItems: 'center', justifyContent: 'center', padding: spacing.xl,
+  },
+  pickerCard: {
+    width: '100%', maxWidth: 360, backgroundColor: colors.canvas,
+    borderRadius: 20, padding: spacing.lg, gap: spacing.md, ...shadow.md,
+  },
+  pickerTitle: { ...type.displaySm, color: colors.ink, textAlign: 'center' },
 })

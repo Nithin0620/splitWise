@@ -1,22 +1,25 @@
-import { View, Text, StyleSheet, Alert } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../src/context/AuthContext'
 import { Card, Button, Avatar, Divider } from '../../src/components/ui'
+import { useDialog } from '../../src/components/Dialog'
 import { colors, spacing, type } from '../../src/theme'
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth()
   const router = useRouter()
+  const dialog = useDialog()
 
-  const handleLogout = () => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: async () => {
-        await logout()
-        router.replace('/(auth)/login')
-      }},
-    ])
+  const handleLogout = async () => {
+    const ok = await dialog.confirm(
+      'Sign out',
+      'Are you sure you want to sign out?',
+      { confirmText: 'Sign out', destructive: true }
+    )
+    if (!ok) return
+    await logout()
+    router.replace('/(auth)/login')
   }
 
   return (

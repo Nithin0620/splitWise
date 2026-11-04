@@ -4,9 +4,9 @@ import * as SecureStore from 'expo-secure-store'
 // Change this to your machine's LAN IP when testing on a physical device
 // e.g. 'http://192.168.1.10:5000/api'
 // For Expo Go on Android emulator use: 'http://10.0.2.2:5000/api'
-export const BASE_URL = 'https://splitwise.cloud.run/api'
+export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://splitwise.cloud.run/api'
 
-const api = axios.create({ baseURL: BASE_URL })
+const api = axios.create({ baseURL: BASE_URL, timeout: 15000 })
 
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync('sw_token')

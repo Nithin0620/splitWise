@@ -307,4 +307,71 @@ const sendInviteEmail = async ({
   return data;
 };
 
-module.exports = { sendInviteEmail };
+/**
+ * Send a friendly settlement reminder email via Resend.
+ * Returns null (no throw) when email is not configured, so reminders still
+ * work as in-app/realtime nudges in local development.
+ */
+const sendSettlementReminderEmail = async ({
+  to,
+  toName,
+  fromName,
+  fromAvatar,
+  tripName,
+  currency,
+  amount,
+  message,
+}) => {
+  if (!process.env.RESEND_API_KEY) return null;
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const money = `${currency} ${Number(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const initial = (fromName || '?').charAt(0).toUpperCase();
+
+  const html = `
+  <div style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#FCF9F7;padding:32px 16px;">
+    <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid rgba(3,3,2,0.09);border-radius:20px;overflow:hidden;">
+      <div style="background:#030302;padding:28px 28px 24px;">
+        <p style="margin:0;color:#FCF9F7;font-size:13px;letter-spacing:0.4px;text-transform:uppercase;">SplitWise · Payment reminder</p>
+        <h1 style="margin:8px 0 0;color:#fff;font-size:24px;font-weight:400;">Hey ${toName || 'there'},</h1>
+      </div>
+      <div style="padding:28px;">
+        <p style="margin:0 0 18px;color:#5A5958;font-size:15px;line-height:1.6;">
+          A gentle nudge from <strong style="color:#030302;">${fromName}</strong> about
+          <strong style="color:#030302;">${tripName}</strong>.
+        </p>
+        <div style="display:flex;align-items:center;gap:14px;background:#F4F2F0;border-radius:14px;padding:16px;margin-bottom:18px;">
+          <div style="width:40px;height:40px;border-radius:50%;background:#030302;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px;">${initial}</div>
+          <div style="flex:1;">
+            <p style="margin:0;color:#5A5958;font-size:12px;">You owe</p>
+            <p style="margin:2px 0 0;color:#030302;font-size:20px;font-weight:600;">${money}</p>
+          </div>
+        </div>
+        ${message ? `<p style="margin:0 0 18px;color:#5A5958;font-size:14px;font-style:italic;">“${message}”</p>` : ''}
+        <p style="margin:0;color:#5A5958;font-size:14px;line-height:1.6;">
+          Open SplitWise to settle up in one tap. You can also record a partial payment any time.
+        </p>
+      </div>
+      <div style="padding:16px 28px;border-top:1px solid rgba(3,3,2,0.09);color:#5A5958;font-size:12px;">
+        Sent via SplitWise. If you've already paid, just ignore this reminder.
+      </div>
+    </div>
+  </div>`;
+
+  const { data, error } = await resend.emails.send({
+    from: process.env.RESEND_FROM_EMAIL || 'SplitWise <onboarding@resend.dev>',
+    to: [to],
+    subject: `Reminder: settle ${money} for "${tripName}"`,
+    html,
+  });
+
+  if (error) {
+    const err = new Error(`Failed to send reminder email: ${error.message}`);
+    err.statusCode = 502;
+    throw err;
+  }
+
+  return data;
+};
+
+module.exports = { sendInviteEmail, sendSettlementReminderEmail };

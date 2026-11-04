@@ -62,4 +62,7 @@ tripSchema.pre('save', function () {
   }
 });
 
+tripSchema.index({ members: 1 });
+tripSchema.index({ createdBy: 1, updatedAt: -1 });
+
 module.exports = mongoose.model('Trip', tripSchema);

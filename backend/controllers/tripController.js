@@ -6,6 +6,7 @@ const Invitation = require('../models/Invitation');
 const { computeTripBalances } = require('../utils/balanceCalculator');
 const { publishTripEvent } = require('../config/ably');
 const { sendInviteEmail } = require('../utils/email');
+const { createNotifications, notifyTripMembers } = require('../utils/notifications');
 
 // @desc  Get all trips for current user
 const getTrips = async (req, res) => {
@@ -51,16 +52,42 @@ const createTrip = async (req, res) => {
 const updateTrip = async (req, res) => {
   const { name, description, startDate, endDate, currency, isArchived } = req.body;
 
-  const trip = await Trip.findByIdAndUpdate(
-    req.trip._id,
-    { name, description, startDate, endDate, currency, isArchived },
-    { new: true, runValidators: true }
-  )
+  // Only update fields that were actually supplied so partial edits
+  // (e.g. archiving from the trip list) never wipe other fields.
+  const updates = {};
+  if (name !== undefined) {
+    if (!String(name).trim()) {
+      return res.status(400).json({ message: 'Trip name cannot be empty' });
+    }
+    updates.name = String(name).trim();
+  }
+  if (description !== undefined) updates.description = description;
+  if (startDate !== undefined) updates.startDate = startDate || null;
+  if (endDate !== undefined) updates.endDate = endDate || null;
+  if (currency !== undefined) updates.currency = currency;
+  if (isArchived !== undefined) updates.isArchived = Boolean(isArchived);
+
+  const resolvedStart = updates.startDate !== undefined ? updates.startDate : req.trip.startDate;
+  const resolvedEnd = updates.endDate !== undefined ? updates.endDate : req.trip.endDate;
+  if (resolvedStart && resolvedEnd && new Date(resolvedEnd) < new Date(resolvedStart)) {
+    return res.status(400).json({ message: 'End date cannot be before start date' });
+  }
+
+  const trip = await Trip.findByIdAndUpdate(req.trip._id, updates, {
+    new: true,
+    runValidators: true,
+  })
     .populate('createdBy', 'name email avatar')
     .populate('members', 'name email avatar');
 
   // Notify all members of the update
   await publishTripEvent(trip._id, 'trip_updated', { trip });
+  await notifyTripMembers(trip, req.user._id, {
+    type: 'trip_updated',
+    title: 'Trip updated',
+    body: `${req.user.name} updated "${trip.name}"`,
+    data: { tripId: trip._id },
+  });
 
   res.json({ success: true, data: trip });
 };
@@ -107,6 +134,26 @@ const addMember = async (req, res) => {
     await trip.populate('createdBy', 'name email avatar');
 
     await publishTripEvent(trip._id, 'member_added', { trip, newMember: userToAdd });
+
+    await createNotifications({
+      userIds: [userToAdd._id],
+      trip: trip._id,
+      type: 'member_added',
+      title: 'Added to trip',
+      body: `${req.user.name} added you to "${trip.name}"`,
+      data: { tripId: trip._id },
+    });
+    const others = trip.members.filter(
+      (memberId) => ![String(req.user._id), String(userToAdd._id)].includes(String(memberId))
+    );
+    await createNotifications({
+      userIds: others,
+      trip: trip._id,
+      type: 'member_added',
+      title: 'New trip member',
+      body: `${userToAdd.name} joined "${trip.name}"`,
+      data: { tripId: trip._id },
+    });
 
     return res.json({ success: true, data: trip });
   }
@@ -191,6 +238,21 @@ const removeMember = async (req, res) => {
   await trip.populate('createdBy', 'name email avatar');
 
   await publishTripEvent(trip._id, 'member_removed', { trip, removedUserId: userId });
+  const removedUser = await User.findById(userId, 'name');
+  await createNotifications({
+    userIds: [userId],
+    trip: trip._id,
+    type: 'member_removed',
+    title: 'Removed from trip',
+    body: `You were removed from "${trip.name}"`,
+    data: { tripId: trip._id },
+  });
+  await notifyTripMembers(trip, req.user._id, {
+    type: 'member_removed',
+    title: 'Trip member removed',
+    body: `${removedUser?.name || 'A member'} was removed from "${trip.name}"`,
+    data: { tripId: trip._id, removedUserId: userId },
+  });
 
   res.json({ success: true, data: trip });
 };
@@ -204,7 +266,14 @@ const getTripBalances = async (req, res) => {
     Settlement.find({ trip: tripId }).populate('fromUser', 'name email avatar').populate('toUser', 'name email avatar'),
   ]);
 
-  const { netBalances, transactions } = computeTripBalances(expenses, settlements);
+  // Allow clients to choose between debt simplification (fewer payments) and
+  // direct pairwise debts. Defaults to simplified.
+  const simplify = req.query.simplify === undefined ? true : req.query.simplify !== 'false';
+  const { netBalances, transactions, simplified } = computeTripBalances(
+    expenses,
+    settlements,
+    { simplify }
+  );
 
   // Enrich netBalances with user info (include past members still present in
   // expenses/settlements so their names resolve).
@@ -267,9 +336,85 @@ const getTripBalances = async (req, res) => {
     data: {
       balances: balanceSummary,
       transactions: enrichedTransactions,
+      simplified,
       spending: memberSpending,
       totalExpenses: expenses.reduce((sum, e) => sum + e.amount, 0),
       totalSettled: settlements.reduce((sum, s) => sum + s.amount, 0),
+    },
+  });
+};
+
+// @desc  Get spending insights for a trip (category, daily, monthly trends)
+const getTripInsights = async (req, res) => {
+  const expenses = await Expense.find({ trip: req.trip._id }).sort({ date: 1 });
+
+  const round2 = (n) => Math.round(Number(n) * 100) / 100;
+  const totalSpent = round2(expenses.reduce((sum, e) => sum + e.amount, 0));
+  const expenseCount = expenses.length;
+
+  const categoryTotals = {};
+  const categoryCounts = {};
+  const dailyTotals = {};
+  const monthlyTotals = {};
+  let biggestExpense = null;
+
+  for (const expense of expenses) {
+    const amount = Number(expense.amount) || 0;
+    const category = expense.category || 'other';
+    categoryTotals[category] = (categoryTotals[category] || 0) + amount;
+    categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+
+    const date = new Date(expense.date);
+    if (!Number.isNaN(date.getTime())) {
+      const day = date.toISOString().slice(0, 10);
+      const month = day.slice(0, 7);
+      dailyTotals[day] = (dailyTotals[day] || 0) + amount;
+      monthlyTotals[month] = (monthlyTotals[month] || 0) + amount;
+    }
+
+    if (!biggestExpense || amount > biggestExpense.amount) {
+      biggestExpense = {
+        _id: expense._id,
+        title: expense.title,
+        amount: round2(amount),
+        category,
+        date: expense.date,
+      };
+    }
+  }
+
+  const categories = Object.entries(categoryTotals)
+    .map(([category, amount]) => ({
+      category,
+      amount: round2(amount),
+      count: categoryCounts[category],
+      percentage: totalSpent ? round2((amount / totalSpent) * 100) : 0,
+    }))
+    .sort((a, b) => b.amount - a.amount);
+
+  const daily = Object.keys(dailyTotals)
+    .sort()
+    .map((date) => ({ date, amount: round2(dailyTotals[date]) }));
+
+  const monthly = Object.keys(monthlyTotals)
+    .sort()
+    .map((month) => ({ month, amount: round2(monthlyTotals[month]) }));
+
+  // Average per active day (days with at least one expense).
+  const averagePerDay = daily.length ? round2(totalSpent / daily.length) : 0;
+
+  res.json({
+    success: true,
+    data: {
+      currency: req.trip.currency || 'INR',
+      totalSpent,
+      expenseCount,
+      averageExpense: expenseCount ? round2(totalSpent / expenseCount) : 0,
+      averagePerDay,
+      biggestExpense,
+      categories,
+      daily,
+      monthly,
     },
   });
 };
@@ -283,4 +428,5 @@ module.exports = {
   addMember,
   removeMember,
   getTripBalances,
+  getTripInsights,
 };

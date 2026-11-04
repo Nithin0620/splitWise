@@ -37,4 +37,7 @@ const settlementSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+settlementSchema.index({ trip: 1, settledAt: -1 });
+settlementSchema.index({ trip: 1, fromUser: 1, toUser: 1 });
+
 module.exports = mongoose.model('Settlement', settlementSchema);

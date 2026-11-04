@@ -1,5 +1,6 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import NotificationsBell from '../components/NotificationsBell'
 import toast from 'react-hot-toast'
 
 export default function AppLayout() {
@@ -30,6 +31,7 @@ export default function AppLayout() {
 
           {/* User area */}
           <div className="flex items-center gap-3">
+            <NotificationsBell />
             <div className="flex items-center gap-2">
               {user?.avatar ? (
                 <img src={user.avatar} alt={user.name} referrerPolicy="no-referrer"

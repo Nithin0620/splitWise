@@ -1,18 +1,25 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import api from '../../../src/lib/api'
 import { Button, Input, SectionLabel, Card } from '../../../src/components/ui'
+import { useDialog } from '../../../src/components/Dialog'
 import { colors, spacing, type } from '../../../src/theme'
 
 export default function SettleScreen() {
-  const { tripId } = useLocalSearchParams()
+  const { tripId, fromUser, toUser, amount } = useLocalSearchParams()
   const router = useRouter()
+  const dialog = useDialog()
   const [trip, setTrip]       = useState(null)
   const [balances, setBalances] = useState(null)
   const [saving, setSaving]   = useState(false)
-  const [form, setForm]       = useState({ fromUser: '', toUser: '', amount: '', notes: '' })
+  const [form, setForm]       = useState({
+    fromUser: fromUser ?? '',
+    toUser: toUser ?? '',
+    amount: amount ?? '',
+    notes: '',
+  })
 
   useEffect(() => {
     Promise.all([
@@ -27,10 +34,10 @@ export default function SettleScreen() {
   const set = (k) => (v) => setForm((p) => ({ ...p, [k]: v }))
 
   const handleSubmit = async () => {
-    if (!form.fromUser || !form.toUser) return Alert.alert('Required', 'Select both payer and receiver')
-    if (form.fromUser === form.toUser) return Alert.alert('Error', 'Payer and receiver must be different')
+    if (!form.fromUser || !form.toUser) return dialog.alert('Required', 'Select both payer and receiver')
+    if (form.fromUser === form.toUser) return dialog.alert('Error', 'Payer and receiver must be different', { variant: 'error' })
     const amt = parseFloat(form.amount)
-    if (!amt || amt <= 0) return Alert.alert('Required', 'Enter a valid amount')
+    if (!amt || amt <= 0) return dialog.alert('Required', 'Enter a valid amount')
     setSaving(true)
     try {
       await api.post(`/settlements/trip/${tripId}`, {
@@ -38,7 +45,7 @@ export default function SettleScreen() {
       })
       router.back()
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Failed')
+      dialog.alert('Error', err.response?.data?.message || 'Failed', { variant: 'error' })
     } finally { setSaving(false) }
   }
 

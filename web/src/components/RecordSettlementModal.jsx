@@ -2,9 +2,9 @@ import { useState } from 'react'
 import api from '../lib/api'
 import toast from 'react-hot-toast'
 
-export default function RecordSettlementModal({ trip, balances, onClose, onSaved }) {
-  // Pre-fill from first suggested transaction if available
-  const firstTx = balances?.transactions?.[0]
+export default function RecordSettlementModal({ trip, balances, initial, onClose, onSaved }) {
+  // Pre-fill from an explicit transaction (partial payments) or the first suggestion
+  const firstTx = initial || balances?.transactions?.[0]
   const [form, setForm] = useState({
     fromUser: firstTx?.from?._id ?? '',
     toUser:   firstTx?.to?._id   ?? '',

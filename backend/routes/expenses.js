@@ -14,6 +14,9 @@ router
   .get(isTripMember, expenseController.getExpenses)
   .post(isTripMember, expenseController.createExpense);
 
+// @route   POST /api/expenses/recurring/run  — Generate due recurring expenses
+router.post('/recurring/run', expenseController.runRecurring);
+
 // @route   GET    /api/expenses/:id  — Get single expense
 // @route   PUT    /api/expenses/:id  — Update expense
 // @route   DELETE /api/expenses/:id  — Delete expense

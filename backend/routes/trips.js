@@ -29,4 +29,7 @@ router.delete('/:id/members/:userId', isTripOwner, tripController.removeMember);
 // @route   GET /api/trips/:id/balances  — Get balance summary for trip
 router.get('/:id/balances', isTripMember, tripController.getTripBalances);
 
+// @route   GET /api/trips/:id/insights  — Spending insights for trip
+router.get('/:id/insights', isTripMember, tripController.getTripInsights);
+
 module.exports = router;

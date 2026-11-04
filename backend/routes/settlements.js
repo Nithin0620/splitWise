@@ -14,6 +14,20 @@ router
   .get(isTripMember, settlementController.getSettlements)
   .post(isTripMember, settlementController.createSettlement);
 
+// @route   POST /api/settlements/trip/:tripId/settle-all  — Settle all suggested debts
+router.post(
+  '/trip/:tripId/settle-all',
+  isTripMember,
+  settlementController.settleAll
+);
+
+// @route   POST /api/settlements/trip/:tripId/remind  — Nudge a member who owes money
+router.post(
+  '/trip/:tripId/remind',
+  isTripMember,
+  settlementController.remindSettlement
+);
+
 // @route   DELETE /api/settlements/:id  — Remove a settlement record
 router.delete('/:id', settlementController.deleteSettlement);
 

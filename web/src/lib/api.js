@@ -13,6 +13,7 @@ export const API_BASE_URL = configuredUrl
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
+  timeout: 15000,
 })
 
 // Attach token from localStorage on every request

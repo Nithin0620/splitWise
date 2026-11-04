@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, StyleSheet, Alert } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Linking from 'expo-linking'
 import api from '../../src/lib/api'
 import { useAuth } from '../../src/context/AuthContext'
 import { Button, Card, Badge, Avatar, LoadingScreen } from '../../src/components/ui'
+import { useDialog } from '../../src/components/Dialog'
 import { colors, spacing, type } from '../../src/theme'
 
 export default function AcceptInviteScreen() {
   const params = useLocalSearchParams()
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const dialog = useDialog()
 
   const token = params.token
   const [preview, setPreview]   = useState(null)
@@ -38,9 +40,11 @@ export default function AcceptInviteScreen() {
     setStatus('accepting')
     try {
       const { data } = await api.post('/invites/accept', { token })
-      Alert.alert('Joined!', data.message || `You joined the trip!`, [
-        { text: 'Open trip', onPress: () => router.replace(`/trips/${data.data._id}`) },
-      ])
+      await dialog.alert('Joined!', data.message || 'You joined the trip!', {
+        confirmText: 'Open trip',
+        variant: 'success',
+      })
+      router.replace(`/trips/${data.data._id}`)
     } catch (err) {
       setErrMsg(err.response?.data?.message || 'Could not accept invite.')
       setStatus('invalid')

@@ -14,4 +14,10 @@ const publishTripEvent = async (tripId, event, payload) => {
   await client.channels.get(`trip:${tripId}`).publish(event, payload);
 };
 
-module.exports = { getRest, publishTripEvent };
+const publishUserEvent = async (userId, event, payload) => {
+  const client = getRest();
+  if (!client) return;
+  await client.channels.get(`user:${userId}`).publish(event, payload);
+};
+
+module.exports = { getRest, publishTripEvent, publishUserEvent };
