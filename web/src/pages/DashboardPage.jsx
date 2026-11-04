@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import CreateTripModal from '../components/CreateTripModal'
+import OfflineBanner from '../components/OfflineBanner'
 import { formatDateRange } from '../lib/date'
 
 const FILTERS = [
@@ -19,12 +20,15 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [filter, setFilter] = useState('active')
+  const [fromCache, setFromCache] = useState(false)
 
   const fetchTrips = async () => {
     try {
-      const { data } = await api.get('/trips')
+      const { data, fromCache: cached } = await api.get('/trips')
       setTrips(data.data)
+      setFromCache(!!cached)
     } catch {
+      setFromCache(false)
       toast.error('Failed to load trips')
     } finally {
       setLoading(false)
@@ -72,6 +76,8 @@ export default function DashboardPage() {
           + New trip
         </button>
       </div>
+
+      <OfflineBanner visible={fromCache} />
 
       {/* Filters */}
       {!loading && trips.length > 0 && (

@@ -9,6 +9,7 @@ import RecordSettlementModal from '../components/RecordSettlementModal'
 import InviteMemberModal from '../components/InviteMemberModal'
 import CreateTripModal from '../components/CreateTripModal'
 import ExpenseDetailModal from '../components/ExpenseDetailModal'
+import OfflineBanner from '../components/OfflineBanner'
 import { useConfirmDialog } from '../lib/useConfirmDialog.jsx'
 import { formatDate, formatDateRange } from '../lib/date'
 
@@ -27,6 +28,7 @@ export default function TripDetailPage() {
   const [tab, setTab]               = useState('expenses') // expenses | insights | spending | balances
   const [simplify, setSimplify]     = useState(true)
   const [settleInitial, setSettleInitial] = useState(null)
+  const [fromCache, setFromCache]   = useState(false)
 
   const [showAddExpense, setShowAddExpense]         = useState(false)
   const [showSettle, setShowSettle]                 = useState(false)
@@ -49,7 +51,9 @@ export default function TripDetailPage() {
       setSettlements(settleRes.data.data)
       setBalances(balRes.data.data)
       setInsights(insightRes.data.data)
+      setFromCache([tripRes, expRes, settleRes, balRes, insightRes].some((res) => res.fromCache))
     } catch (err) {
+      setFromCache(false)
       if (err.response?.status === 403 || err.response?.status === 404) {
         toast.error('Trip not found or access denied')
         navigate('/')
@@ -211,6 +215,8 @@ export default function TripDetailPage() {
               style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
         ← All trips
       </button>
+
+      <OfflineBanner visible={fromCache} />
 
       {/* Trip header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">

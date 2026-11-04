@@ -18,6 +18,8 @@ export default function LoginScreen() {
   const dialog = useDialog()
 
   const handleGoogleLogin = async () => {
+    // Warm up the browser for a smoother, more reliable Custom Tab experience on Android
+    await WebBrowser.warmUpAsync().catch(() => {})
     try {
       const redirectUri = makeRedirectUri({ scheme: 'splitwise', path: 'auth/callback' })
       
@@ -39,6 +41,8 @@ export default function LoginScreen() {
       }
     } catch (err) {
       dialog.alert('Sign in failed', err.message, { variant: 'error' })
+    } finally {
+      await WebBrowser.coolDownAsync().catch(() => {})
     }
   }
 

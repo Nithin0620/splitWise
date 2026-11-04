@@ -9,6 +9,7 @@ import api from '../../../src/lib/api'
 import { useAuth } from '../../../src/context/AuthContext'
 import { getSocket } from '../../../src/lib/socket'
 import { Card, SmallButton, Button, Badge, Avatar, Divider, SectionLabel, LoadingScreen, EmptyState } from '../../../src/components/ui'
+import OfflineBanner from '../../../src/components/OfflineBanner'
 import { useDialog } from '../../../src/components/Dialog'
 import { colors, spacing, type, shadow } from '../../../src/theme'
 import { formatDate, formatDateRange } from '../../../src/lib/date'
@@ -32,6 +33,7 @@ export default function TripDetailScreen() {
   const [refreshing, setRefreshing]   = useState(false)
   const [tab, setTab]                 = useState('expenses')
   const [simplify, setSimplify]       = useState(true)
+  const [fromCache, setFromCache]     = useState(false)
 
   const loadAll = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -48,7 +50,9 @@ export default function TripDetailScreen() {
       setSettlements(sRes.data.data)
       setBalances(bRes.data.data)
       setInsights(iRes.data.data)
+      setFromCache([tRes, eRes, sRes, bRes, iRes].some((res) => res.fromCache))
     } catch (err) {
+      setFromCache(false)
       dialog.alert('Error', 'Failed to load trip', { variant: 'error' })
       router.back()
     } finally {
@@ -215,6 +219,8 @@ export default function TripDetailScreen() {
             {trip?.isArchived && <Badge label="Archived" variant="amber" />}
           </View>
         </View>
+
+        <OfflineBanner visible={fromCache} />
 
         {/* Summary cards */}
         <View style={styles.summaryRow}>

@@ -13,25 +13,29 @@ export default function AuthCallback() {
     if (ran.current) return
     ran.current = true
 
-    const token = params.get('token')
-    const error = params.get('error')
+    const finishSignIn = async () => {
+      const token = params.get('token')
+      const error = params.get('error')
 
-    if (error || !token) {
-      toast.error('Google sign-in failed. Please try again.')
-      navigate('/login', { replace: true })
-      return
+      if (error || !token) {
+        toast.error('Google sign-in failed. Please try again.')
+        navigate('/login', { replace: true })
+        return
+      }
+
+      await login(token)
+
+      // If user was trying to accept an invite before signing in, redirect there
+      const pendingInviteToken = sessionStorage.getItem('pending_invite_token')
+      if (pendingInviteToken) {
+        sessionStorage.removeItem('pending_invite_token')
+        navigate(`/invite/accept?token=${pendingInviteToken}`, { replace: true })
+      } else {
+        navigate('/', { replace: true })
+      }
     }
 
-    login(token)
-
-    // If user was trying to accept an invite before signing in, redirect there
-    const pendingInviteToken = sessionStorage.getItem('pending_invite_token')
-    if (pendingInviteToken) {
-      sessionStorage.removeItem('pending_invite_token')
-      navigate(`/invite/accept?token=${pendingInviteToken}`, { replace: true })
-    } else {
-      navigate('/', { replace: true })
-    }
+    finishSignIn()
   }, [])
 
   return (

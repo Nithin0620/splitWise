@@ -9,6 +9,7 @@ import api from '../../src/lib/api'
 import { useAuth } from '../../src/context/AuthContext'
 import { Card, Button, Input, Badge, Avatar, EmptyState, LoadingScreen, DateField } from '../../src/components/ui'
 import NotificationBell from '../../src/components/NotificationBell'
+import OfflineBanner from '../../src/components/OfflineBanner'
 import { useDialog } from '../../src/components/Dialog'
 import { colors, spacing, type, shadow } from '../../src/theme'
 import { formatDateRange } from '../../src/lib/date'
@@ -24,13 +25,16 @@ export default function TripsScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [filter, setFilter] = useState('active')
+  const [fromCache, setFromCache] = useState(false)
 
   const fetchTrips = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const { data } = await api.get('/trips')
+      const { data, fromCache: cached } = await api.get('/trips')
       setTrips(data.data)
+      setFromCache(!!cached)
     } catch {
+      setFromCache(false)
       dialog.alert('Error', 'Failed to load trips', { variant: 'error' })
     } finally {
       setLoading(false)
@@ -70,6 +74,10 @@ export default function TripsScreen() {
           <NotificationBell />
           <Avatar user={user} size="md" />
         </View>
+      </View>
+
+      <View style={{ paddingHorizontal: spacing.xl }}>
+        <OfflineBanner visible={fromCache} />
       </View>
 
       {/* Filters */}

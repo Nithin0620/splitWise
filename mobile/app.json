@@ -40,7 +40,8 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "splitwise"
+              "scheme": "splitwise",
+              "host": "*"
             }
           ],
           "category": [
