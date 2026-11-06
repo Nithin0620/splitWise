@@ -5,15 +5,33 @@ const { sendTokenResponse } = require('../utils/token');
 
 const router = express.Router();
 
+// Only allow deep links back into our own apps. This prevents the OAuth
+// `redirectUri`/`state` parameter from being abused as an open redirect.
+const ALLOWED_REDIRECT_PROTOCOLS = ['splitwise:', 'exp:', 'exps:', 'exp+splitwise:'];
+
+function isAllowedRedirect(uri) {
+  try {
+    return ALLOWED_REDIRECT_PROTOCOLS.includes(new URL(uri).protocol);
+  } catch (_) {
+    return false;
+  }
+}
+
 // @route   GET /api/auth/google
 // @desc    Initiate Google OAuth flow
 router.get(
   '/google',
   (req, res, next) => {
-    // Use simple state to indicate mobile request
-    // Google OAuth limits state size, so we use a simple flag
     const { redirectUri } = req.query;
-    const state = redirectUri ? 'mobile' : undefined;
+
+    // Carry the client's redirect URI (custom scheme for dev/standalone
+    // builds, exp:// for Expo Go) through Google via the `state` param.
+    // Google echoes `state` back verbatim to the callback.
+    const state =
+      redirectUri && isAllowedRedirect(redirectUri)
+        ? Buffer.from(redirectUri).toString('base64url')
+        : undefined;
+
     passport.authenticate('google', {
       scope: ['profile', 'email'],
       session: false,
@@ -31,12 +49,27 @@ router.get(
     const { generateToken } = require('../utils/token');
     const token = generateToken(req.user._id);
 
-    // Check if this is a mobile request via state parameter
+    // Web fallback: send the user back to the web app.
     let redirectUrl = `${process.env.CLIENT_URL}/auth/callback?token=${token}`;
-    
-    // If state is 'mobile', redirect to deep link
-    if (req.query.state === 'mobile') {
-      redirectUrl = `splitwise://auth/callback?token=${token}`;
+
+    // If the client supplied a redirect URI, it was carried through Google in
+    // `state`. Decode it and send the token back to the app (Expo Go: exp://,
+    // dev/standalone build: splitwise://).
+    if (req.query.state) {
+      try {
+        const mobileRedirect = Buffer.from(
+          req.query.state,
+          'base64url'
+        ).toString('utf8');
+
+        if (isAllowedRedirect(mobileRedirect)) {
+          const url = new URL(mobileRedirect);
+          url.searchParams.set('token', token);
+          redirectUrl = url.toString();
+        }
+      } catch (_) {
+        // Ignore malformed state and fall back to the web app.
+      }
     }
 
     res.redirect(redirectUrl);
