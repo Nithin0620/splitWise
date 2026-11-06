@@ -20,7 +20,7 @@ export default function ExpenseDetailModal({ expense, currency, userId, members,
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 520 }}>
-        <div className="p-6 flex flex-col gap-4" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+        <div className="p-4 sm:p-6 flex flex-col gap-4" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
           <div className="flex items-start gap-3">
             <span className="text-2xl">{CATEGORY_EMOJI[expense.category] || '📦'}</span>
             <div className="flex-1 min-w-0">
@@ -37,7 +37,9 @@ export default function ExpenseDetailModal({ expense, currency, userId, members,
           </div>
 
           <div>
-            <p className="text-display-sm">{currency} {expense.amount.toFixed(2)}</p>
+            <p className="text-display-sm break-words" style={{ fontSize: 'clamp(28px, 9vw, 46px)' }}>
+              {currency} {expense.amount.toFixed(2)}
+            </p>
             {expense.currency && expense.currency !== currency && (
               <p className="text-caption" style={{ color: 'var(--color-text-muted)' }}>
                 {expense.currency} {Number(expense.originalAmount ?? expense.amount).toFixed(2)}
@@ -102,7 +104,7 @@ export default function ExpenseDetailModal({ expense, currency, userId, members,
 function Row({ label, value }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="text-body-sm w-20 flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>{label}</span>
+      <span className="text-body-sm w-16 sm:w-20 flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>{label}</span>
       <span className="text-body-sm flex-1">{value}</span>
     </div>
   )

@@ -80,7 +80,7 @@ export default function InviteScreen() {
               style={{ paddingHorizontal: spacing.lg, height: 44 }} />
           </View>
           <Text style={{ ...type.caption, color: colors.textMuted, marginTop: spacing.xs }}>
-            If they have an account they'll be added immediately. Otherwise they'll get an invite email.
+            If they have an account they&apos;ll be added immediately. Otherwise they&apos;ll get an invite email.
           </Text>
         </View>
 

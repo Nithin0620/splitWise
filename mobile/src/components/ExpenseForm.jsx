@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { Button, Input, SectionLabel, DateField } from './ui'
 import { useDialog } from './Dialog'
@@ -260,7 +260,7 @@ export default function ExpenseForm({
           />
           {form.currency !== tripCurrency && sourceTotal > 0 && (
             <Text style={{ ...type.caption, color: colors.textMuted, marginTop: 4 }}>
-              ≈ {tripCurrency} {convertedTotal.toFixed(2)} at today's rate
+              ≈ {tripCurrency} {convertedTotal.toFixed(2)} at today&apos;s rate
             </Text>
           )}
         </View>
@@ -470,7 +470,7 @@ export default function ExpenseForm({
           </View>
           {form.currency !== tripCurrency && itemTotal > 0 && (
             <Text style={{ ...type.caption, color: colors.textMuted, textAlign: 'right' }}>
-              ≈ {tripCurrency} {convertedTotal.toFixed(2)} at today's rate
+              ≈ {tripCurrency} {convertedTotal.toFixed(2)} at today&apos;s rate
             </Text>
           )}
         </View>

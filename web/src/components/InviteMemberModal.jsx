@@ -55,14 +55,14 @@ export default function InviteMemberModal({ trip, onClose, onInvited }) {
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal">
-        <div className="p-6" style={{ borderBottom: '1px solid var(--color-border)' }}>
+        <div className="p-4 sm:p-6" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <h2 className="text-heading-md">Invite to trip</h2>
           <p className="text-body-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
             Enter an email — they'll get a link to join.
           </p>
         </div>
 
-        <div className="p-6 flex flex-col gap-6">
+        <div className="p-4 sm:p-6 flex flex-col gap-6">
           {/* Invite form */}
           <form onSubmit={handleInvite} className="flex gap-2">
             <input
@@ -93,9 +93,9 @@ export default function InviteMemberModal({ trip, onClose, onInvited }) {
                         Expires {new Date(inv.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                       </p>
                     </div>
-                    <span className="badge badge-amber">Pending</span>
+                    <span className="badge badge-amber flex-shrink-0">Pending</span>
                     <button onClick={() => cancelInvite(inv._id)}
-                            className="text-caption hover:opacity-70"
+                            className="text-caption hover:opacity-70 flex-shrink-0"
                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
                       ✕
                     </button>

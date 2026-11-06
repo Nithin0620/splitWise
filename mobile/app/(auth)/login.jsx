@@ -73,7 +73,7 @@ export default function LoginScreen() {
           {[
             ['💸', 'Split by equal share, exact amount, or percentage'],
             ['⚡', 'Live updates when your group adds expenses'],
-            ['📩', 'Invite anyone — even if they\'re not signed up yet'],
+            ['📩', "Invite anyone — even if they're not signed up yet"],
           ].map(([icon, text]) => (
             <View key={text} style={styles.hint}>
               <Text style={styles.hintIcon}>{icon}</Text>

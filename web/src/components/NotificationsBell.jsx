@@ -118,9 +118,9 @@ export default function NotificationsBell() {
 
       {open && (
         <div
-          className="absolute right-0 mt-2 rounded-2xl overflow-hidden"
+          className="absolute right-0 mt-2 rounded-2xl overflow-hidden max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:top-16 max-sm:mt-0"
           style={{
-            width: 340, maxHeight: 440, display: 'flex', flexDirection: 'column',
+            width: 340, maxWidth: 'calc(100vw - 24px)', maxHeight: 440, display: 'flex', flexDirection: 'column',
             background: '#fff', border: '1px solid var(--color-border)',
             boxShadow: 'var(--shadow-lg)', zIndex: 50,
           }}

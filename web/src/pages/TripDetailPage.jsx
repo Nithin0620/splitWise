@@ -211,7 +211,7 @@ export default function TripDetailPage() {
   return (
     <div>
       {/* Back */}
-      <button onClick={() => navigate('/')} className="flex items-center gap-1 text-body-sm mb-6 hover:opacity-70 transition-opacity"
+      <button onClick={() => navigate('/')} className="flex items-center gap-1 text-body-sm mb-4 sm:mb-6 hover:opacity-70 transition-opacity"
               style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
         ← All trips
       </button>
@@ -219,10 +219,10 @@ export default function TripDetailPage() {
       <OfflineBanner visible={fromCache} />
 
       {/* Trip header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-heading-xl" style={{ color: 'var(--color-ink)' }}>{trip.name}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6 sm:mb-8">
+        <div className="min-w-0">
+          <div className="flex items-center flex-wrap gap-2 sm:gap-3 mb-1">
+            <h1 className="text-heading-xl break-words" style={{ color: 'var(--color-ink)' }}>{trip.name}</h1>
             {trip.isArchived && <span className="badge badge-amber">Archived</span>}
           </div>
           {trip.description && (
@@ -239,26 +239,26 @@ export default function TripDetailPage() {
         </div>
 
         <div className="flex gap-2 flex-wrap">
-          <button className="btn-primary-sm" onClick={() => setShowAddExpense(true)}>
+          <button className="btn-primary-sm flex-1 sm:flex-none" onClick={() => setShowAddExpense(true)}>
             + Expense
           </button>
-          <button className="btn-ghost" style={{ height: 36, padding: '8px 14px', fontSize: 13 }}
+          <button className="btn-ghost flex-1 sm:flex-none" style={{ height: 36, padding: '8px 14px', fontSize: 13 }}
                   onClick={() => setShowSettle(true)}>
             Record payment
           </button>
           {isOwner && (
-            <button className="btn-ghost" style={{ height: 36, padding: '8px 14px', fontSize: 13 }}
+            <button className="btn-ghost flex-1 sm:flex-none" style={{ height: 36, padding: '8px 14px', fontSize: 13 }}
                     onClick={() => setShowInvite(true)}>
               + Invite
             </button>
           )}
           {isOwner && (
             <>
-              <button className="btn-ghost" style={{ height: 36, padding: '8px 14px', fontSize: 13 }}
+              <button className="btn-ghost flex-1 sm:flex-none" style={{ height: 36, padding: '8px 14px', fontSize: 13 }}
                       onClick={() => setShowEditTrip(true)}>
                 Edit
               </button>
-              <button className="btn-ghost" style={{ height: 36, padding: '8px 14px', fontSize: 13 }}
+              <button className="btn-ghost flex-1 sm:flex-none" style={{ height: 36, padding: '8px 14px', fontSize: 13 }}
                       onClick={toggleArchive}>
                 {trip.isArchived ? 'Unarchive' : 'Archive'}
               </button>
@@ -267,19 +267,19 @@ export default function TripDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         {/* Left col: expenses + balances */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
+        <div className="lg:col-span-2 flex flex-col gap-5 sm:gap-6">
           {/* Summary bar */}
           <SummaryBar balances={balances} currency={trip.currency} />
 
           {/* Tabs */}
           <div>
-            <div className="flex gap-1 mb-4 p-1 rounded-full w-fit"
+            <div className="flex gap-1 mb-4 p-1 rounded-full w-full sm:w-fit overflow-x-auto no-scrollbar"
                  style={{ backgroundColor: 'var(--color-neutral)' }}>
               {['expenses', 'insights', 'spending', 'balances'].map((t) => (
                 <button key={t} onClick={() => setTab(t)}
-                        className="px-5 py-1.5 rounded-full text-body-sm font-medium transition-all capitalize"
+                        className="flex-1 sm:flex-none px-4 sm:px-5 py-1.5 rounded-full text-body-sm font-medium transition-all capitalize whitespace-nowrap"
                         style={{
                           backgroundColor: tab === t ? '#fff' : 'transparent',
                           color: tab === t ? 'var(--color-ink)' : 'var(--color-text-muted)',
@@ -397,7 +397,7 @@ export default function TripDetailPage() {
 function SummaryBar({ balances, currency }) {
   if (!balances) return null
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
       {[
         { label: 'Total spent', value: balances.totalExpenses },
         { label: 'Total settled', value: balances.totalSettled },
@@ -405,7 +405,7 @@ function SummaryBar({ balances, currency }) {
       ].map(({ label, value }) => (
         <div key={label} className="card p-4">
           <p className="text-caption mb-1" style={{ color: 'var(--color-text-muted)' }}>{label}</p>
-          <p className="text-body-md-strong">
+          <p className="text-body-md-strong break-words">
             {currency} {value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
           </p>
         </div>
@@ -438,56 +438,64 @@ function ExpenseList({ expenses, userId, currency, onOpen, onEdit, onDelete }) {
         const myShare = exp.splits?.find((s) => s.user?._id === userId)?.amount ?? 0
         const iPaid = exp.paidBy?._id === userId
         return (
-          <div key={exp._id} className="card p-4 flex items-center gap-4"
+          <div key={exp._id} className="card p-4"
                onClick={() => onOpen(exp)}
                style={{ cursor: 'pointer' }}>
-            <div className="text-2xl w-10 text-center flex-shrink-0">
-              {CATEGORY_EMOJI[exp.category] || '📦'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-body-md-strong truncate">{exp.title}</p>
-              <p className="text-caption mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-                Paid by {iPaid ? 'you' : exp.paidBy?.name} ·{' '}
-                {formatDate(exp.date, { day: 'numeric', month: 'short' })}
-                {exp.splitType && exp.splitType !== 'equal'
-                  ? ` · ${SPLIT_LABELS[exp.splitType] ?? exp.splitType}` : ''}
-                {exp.recurrence?.frequency && exp.recurrence.frequency !== 'none'
-                  ? ` · 🔁 ${exp.recurrence.frequency}` : ''}
-              </p>
-              {exp.notes && (
-                <p className="text-caption mt-1 italic truncate" style={{ color: 'var(--color-text-muted)' }}>
-                  {exp.notes}
-                </p>
-              )}
-            </div>
-            <div className="text-right flex-shrink-0">
-              {exp.currency && exp.currency !== currency && (
-                <p className="text-caption" style={{ color: 'var(--color-text-muted)' }}>
-                  {exp.currency} {Number(exp.originalAmount ?? exp.amount).toFixed(2)}
-                </p>
-              )}
-              <p className="text-body-md-strong">
-                {currency} {exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-              </p>
-              <p className="text-caption" style={{ color: iPaid ? '#059669' : 'var(--color-text-muted)' }}>
-                {iPaid ? `you lent ${currency} ${(exp.amount - myShare).toFixed(2)}` : `your share ${currency} ${myShare.toFixed(2)}`}
-              </p>
-            </div>
-            <div className="flex gap-1">
-              {(exp.createdBy?._id === userId || exp.paidBy?._id === userId) && (
-                <>
-                  <button onClick={(e) => { e.stopPropagation(); onEdit(exp) }}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-sm hover:opacity-70"
-                          style={{ background: 'none', border: '1px solid var(--color-border)', cursor: 'pointer' }}>
-                    ✏️
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); onDelete(exp._id) }}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-sm hover:opacity-70"
-                          style={{ background: 'none', border: '1px solid var(--color-border)', cursor: 'pointer' }}>
-                    🗑️
-                  </button>
-                </>
-              )}
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="text-2xl w-8 sm:w-10 text-center flex-shrink-0">
+                {CATEGORY_EMOJI[exp.category] || '📦'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-body-md-strong truncate">{exp.title}</p>
+                    <p className="text-caption mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                      Paid by {iPaid ? 'you' : exp.paidBy?.name} ·{' '}
+                      {formatDate(exp.date, { day: 'numeric', month: 'short' })}
+                      {exp.splitType && exp.splitType !== 'equal'
+                        ? ` · ${SPLIT_LABELS[exp.splitType] ?? exp.splitType}` : ''}
+                      {exp.recurrence?.frequency && exp.recurrence.frequency !== 'none'
+                        ? ` · 🔁 ${exp.recurrence.frequency}` : ''}
+                    </p>
+                    {exp.notes && (
+                      <p className="text-caption mt-1 italic truncate" style={{ color: 'var(--color-text-muted)' }}>
+                        {exp.notes}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    {exp.currency && exp.currency !== currency && (
+                      <p className="text-caption" style={{ color: 'var(--color-text-muted)' }}>
+                        {exp.currency} {Number(exp.originalAmount ?? exp.amount).toFixed(2)}
+                      </p>
+                    )}
+                    <p className="text-body-md-strong whitespace-nowrap">
+                      {currency} {exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-2 mt-2">
+                  <p className="text-caption min-w-0 truncate" style={{ color: iPaid ? '#059669' : 'var(--color-text-muted)' }}>
+                    {iPaid ? `you lent ${currency} ${(exp.amount - myShare).toFixed(2)}` : `your share ${currency} ${myShare.toFixed(2)}`}
+                  </p>
+                  <div className="flex gap-1 flex-shrink-0">
+                    {(exp.createdBy?._id === userId || exp.paidBy?._id === userId) && (
+                      <>
+                        <button onClick={(e) => { e.stopPropagation(); onEdit(exp) }}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm hover:opacity-70"
+                                style={{ background: 'none', border: '1px solid var(--color-border)', cursor: 'pointer' }}>
+                          ✏️
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); onDelete(exp._id) }}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm hover:opacity-70"
+                                style={{ background: 'none', border: '1px solid var(--color-border)', cursor: 'pointer' }}>
+                          🗑️
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )
@@ -655,7 +663,7 @@ function BalancesTab({
     <div className="flex flex-col gap-6">
       {/* Progress */}
       <div className="card p-4">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <span className="text-body-sm" style={{ color: 'var(--color-text-muted)' }}>
             {totalSettled.toFixed(2)} of {totalExpenses.toFixed(2)} {currency} settled
           </span>
@@ -696,7 +704,7 @@ function BalancesTab({
       {/* Suggested transactions */}
       {balances.transactions?.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <h3 className="text-heading-xs" style={{ color: 'var(--color-text-muted)' }}>
               {simplify ? 'Suggested settlements' : 'Direct debts'}
             </h3>
@@ -707,16 +715,16 @@ function BalancesTab({
               <div key={i} className="card p-4">
                 <div className="flex items-center gap-3">
                   <Avatar user={t.from} size="sm" />
-                  <div className="flex-1">
-                    <p className="text-body-sm">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-body-sm truncate">
                       <strong>{t.from?.name}</strong> → <strong>{t.to?.name}</strong>
                     </p>
                   </div>
-                  <span className="text-body-md-strong">
+                  <span className="text-body-md-strong flex-shrink-0 whitespace-nowrap">
                     {currency} {t.amount.toFixed(2)}
                   </span>
                 </div>
-                <div className="flex gap-2 mt-3 pt-3" style={{ borderTop: '1px solid var(--color-border)' }}>
+                <div className="flex flex-wrap gap-2 mt-3 pt-3" style={{ borderTop: '1px solid var(--color-border)' }}>
                   <button onClick={() => onSettle(t)}
                           className="text-caption px-3 py-1 rounded-full"
                           style={{ backgroundColor: 'var(--color-neutral)', border: 'none', cursor: 'pointer' }}>
@@ -750,14 +758,16 @@ function BalancesTab({
           {balances.balances?.map((b) => (
             <div key={b.user?._id} className="card p-4 flex items-center gap-3">
               <Avatar user={b.user} size="sm" />
-              <span className="flex-1 text-body-sm">{b.user?.name}</span>
-              <span className="text-body-md-strong"
-                    style={{ color: b.netAmount >= 0 ? '#059669' : '#dc2626' }}>
-                {b.netAmount >= 0 ? '+' : ''}{currency} {Math.abs(b.netAmount).toFixed(2)}
-              </span>
-              <span className="text-caption" style={{ color: 'var(--color-text-muted)' }}>
-                {b.netAmount >= 0 ? 'is owed' : 'owes'}
-              </span>
+              <span className="flex-1 min-w-0 text-body-sm truncate">{b.user?.name}</span>
+              <div className="text-right flex-shrink-0">
+                <p className="text-body-md-strong whitespace-nowrap"
+                   style={{ color: b.netAmount >= 0 ? '#059669' : '#dc2626' }}>
+                  {b.netAmount >= 0 ? '+' : ''}{currency} {Math.abs(b.netAmount).toFixed(2)}
+                </p>
+                <p className="text-caption" style={{ color: 'var(--color-text-muted)' }}>
+                  {b.netAmount >= 0 ? 'is owed' : 'owes'}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -772,20 +782,20 @@ function BalancesTab({
           <div className="flex flex-col gap-2">
             {settlements.map((s) => (
               <div key={s._id} className="card p-4 flex items-center gap-3">
-                <span className="text-xl">💸</span>
-                <div className="flex-1">
-                  <p className="text-body-sm">
+                <span className="text-xl flex-shrink-0">💸</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-body-sm truncate">
                     <strong>{s.fromUser?.name}</strong> paid <strong>{s.toUser?.name}</strong>
                   </p>
                   <p className="text-caption" style={{ color: 'var(--color-text-muted)' }}>
                     {formatDate(s.settledAt)}
                   </p>
                 </div>
-                <span className="text-body-md-strong">
+                <span className="text-body-md-strong flex-shrink-0 whitespace-nowrap">
                   {currency} {s.amount.toFixed(2)}
                 </span>
                 <button onClick={() => onDeleteSettlement(s._id)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
                         style={{ background: 'none', border: '1px solid var(--color-border)', cursor: 'pointer' }}>
                   🗑️
                 </button>
@@ -828,8 +838,8 @@ function MembersPanel({ trip, userId, isOwner, onInvite, onRefresh }) {
 
   return (
     <>
-    <div className="card p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="card p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3 mb-4">
         <h3 className="text-heading-xs" style={{ color: 'var(--color-text-muted)' }}>Members</h3>
         {isOwner && (
           <button onClick={onInvite} className="btn-primary-sm">+ Invite</button>
@@ -880,7 +890,7 @@ function TripDetailSkeleton() {
     <div className="animate-pulse">
       <div className="h-8 rounded mb-2" style={{ backgroundColor: 'var(--color-neutral)', width: '30%' }} />
       <div className="h-4 rounded mb-8" style={{ backgroundColor: 'var(--color-neutral)', width: '50%' }} />
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
         {[1,2,3].map(i => <div key={i} className="h-20 rounded-2xl" style={{ backgroundColor: 'var(--color-neutral)' }} />)}
       </div>
       <div className="h-64 rounded-2xl" style={{ backgroundColor: 'var(--color-neutral)' }} />

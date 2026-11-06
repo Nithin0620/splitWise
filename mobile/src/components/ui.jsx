@@ -18,7 +18,7 @@ export function Button({ title, onPress, variant = 'primary', disabled, loading,
       {loading
         ? <ActivityIndicator color={variant === 'ghost' ? colors.ink : colors.white} size="small" />
         : <>{icon && <Text style={{ marginRight: 6, fontSize: 15 }}>{icon}</Text>}
-            <Text style={t}>{title}</Text></>}
+            <Text style={t} numberOfLines={1}>{title}</Text></>}
     </TouchableOpacity>
   )
 }
@@ -58,8 +58,8 @@ export function DateField({
   minimumDate, maximumDate, style, clearable = true,
 }) {
   const [show, setShow] = useState(false)
-  const dateValue = value ? new Date(value) : new Date()
-  if (Number.isNaN(dateValue.getTime())) dateValue.setTime(Date.now())
+  const parsed = value ? new Date(value) : null
+  const dateValue = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date()
 
   const handleChange = (event, selected) => {
     if (Platform.OS === 'android') {
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl, ...shadow.sm,
   },
   btnGhost: {
-    height: 44, borderRadius: radius.button, backgroundColor: 'transparent',
+    height: 52, borderRadius: radius.button, backgroundColor: 'transparent',
     borderWidth: 1, borderColor: colors.border,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: spacing.lg,

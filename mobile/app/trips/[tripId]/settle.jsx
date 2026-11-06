@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import api from '../../../src/lib/api'
-import { Button, Input, SectionLabel, Card } from '../../../src/components/ui'
+import { Button, Input, SectionLabel, LoadingScreen } from '../../../src/components/ui'
 import { useDialog } from '../../../src/components/Dialog'
 import { colors, spacing, type } from '../../../src/theme'
 
@@ -49,7 +49,7 @@ export default function SettleScreen() {
     } finally { setSaving(false) }
   }
 
-  if (!trip) return null
+  if (!trip) return <LoadingScreen />
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.canvas }} edges={['bottom']}>

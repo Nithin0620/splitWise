@@ -43,14 +43,14 @@ export default function RecordSettlementModal({ trip, balances, initial, onClose
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal">
-        <div className="p-6" style={{ borderBottom: '1px solid var(--color-border)' }}>
+        <div className="p-4 sm:p-6" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <h2 className="text-heading-md">Record a payment</h2>
           <p className="text-body-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
             Log that someone paid someone back.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 flex flex-col gap-5">
           {/* Suggested settlements quick-fill */}
           {balances?.transactions?.length > 0 && (
             <div>
@@ -61,10 +61,10 @@ export default function RecordSettlementModal({ trip, balances, initial, onClose
                           onClick={() => setForm((p) => ({ ...p, fromUser: t.from._id, toUser: t.to._id, amount: t.amount }))}
                           className="flex items-center justify-between px-4 py-3 rounded-xl text-left transition-colors"
                           style={{ backgroundColor: 'var(--color-neutral)', border: 'none', cursor: 'pointer' }}>
-                    <span className="text-body-sm">
+                    <span className="text-body-sm min-w-0 truncate">
                       <strong>{t.from?.name}</strong> → <strong>{t.to?.name}</strong>
                     </span>
-                    <span className="text-body-sm font-medium">
+                    <span className="text-body-sm font-medium flex-shrink-0 whitespace-nowrap">
                       {trip.currency} {t.amount.toFixed(2)}
                     </span>
                   </button>
@@ -89,7 +89,7 @@ export default function RecordSettlementModal({ trip, balances, initial, onClose
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Amount ({trip.currency})</label>
               <input type="number" min="0" step="0.01" className="input"

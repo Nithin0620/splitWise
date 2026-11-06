@@ -50,14 +50,14 @@ export default function CreateTripModal({ trip, onClose, onCreated }) {
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal">
-        <div className="p-6 border-b" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="p-4 sm:p-6 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <h2 className="text-heading-md">{isEdit ? 'Edit trip' : 'New trip'}</h2>
           <p className="text-body-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
             {isEdit ? 'Update the details for this trip.' : 'Fill in the details to get started.'}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 flex flex-col gap-5">
           <div>
             <label className="label">Trip name *</label>
             <input className="input" placeholder="e.g. Goa 2026" value={form.name} onChange={set('name')} autoFocus />
@@ -69,7 +69,7 @@ export default function CreateTripModal({ trip, onClose, onCreated }) {
               value={form.description} onChange={set('description')} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Start date</label>
               <input type="date" className="input" value={form.startDate} onChange={set('startDate')} />

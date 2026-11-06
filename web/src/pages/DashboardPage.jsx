@@ -63,16 +63,16 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-end justify-between mb-8">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
+        <div className="min-w-0">
           <p className="text-heading-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>
             Good to see you,
           </p>
-          <h1 className="text-heading-xl" style={{ color: 'var(--color-ink)' }}>
+          <h1 className="text-heading-xl break-words" style={{ color: 'var(--color-ink)' }}>
             {user?.name?.split(' ')[0]}
           </h1>
         </div>
-        <button className="btn-primary" onClick={() => setShowCreate(true)}>
+        <button className="btn-primary w-full sm:w-auto" onClick={() => setShowCreate(true)}>
           + New trip
         </button>
       </div>

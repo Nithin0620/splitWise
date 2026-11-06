@@ -205,13 +205,13 @@ export default function AddExpenseModal({ trip, expense, onClose, onSaved }) {
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 600 }}>
-        <div className="p-6" style={{ borderBottom: '1px solid var(--color-border)' }}>
+        <div className="p-4 sm:p-6" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <h2 className="text-heading-md">{isEdit ? 'Edit expense' : 'Add expense'}</h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 overflow-y-auto" style={{ maxHeight: '75vh' }}>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 flex flex-col gap-5 overflow-y-auto" style={{ maxHeight: '75vh' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2">
               <label className="label">What for? *</label>
               <input className="input" placeholder="e.g. Dinner at rooftop" value={form.title} onChange={set('title')} autoFocus />
             </div>
@@ -226,7 +226,7 @@ export default function AddExpenseModal({ trip, expense, onClose, onSaved }) {
           </div>
 
           {/* Currency + amount + date */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="label">Currency</label>
               <select className="select" value={form.currency} onChange={set('currency')}>
@@ -309,7 +309,7 @@ export default function AddExpenseModal({ trip, expense, onClose, onSaved }) {
               </p>
               {splits.map((s) => (
                 <div key={s.userId} className="flex items-center gap-3">
-                  <span className="text-body-sm w-24 truncate">{s.name}</span>
+                  <span className="text-body-sm w-20 sm:w-24 truncate">{s.name}</span>
                   <input type="number" min="0" step="0.01" className="input flex-1"
                          placeholder="0.00" value={s.amount}
                          onChange={(e) => setSplitField(s.userId, 'amount', e.target.value)} />
@@ -329,14 +329,14 @@ export default function AddExpenseModal({ trip, expense, onClose, onSaved }) {
                 Enter percentages (must sum to 100%)
               </p>
               {splits.map((s) => (
-                <div key={s.userId} className="flex items-center gap-3">
-                  <span className="text-body-sm w-24 truncate">{s.name}</span>
+                <div key={s.userId} className="flex items-center gap-2 sm:gap-3">
+                  <span className="text-body-sm w-20 sm:w-24 truncate">{s.name}</span>
                   <input type="number" min="0" step="0.1" max="100" className="input flex-1"
                          placeholder="0" value={s.percentage}
                          onChange={(e) => setSplitField(s.userId, 'percentage', e.target.value)} />
-                  <span className="text-body-sm w-6" style={{ color: 'var(--color-text-muted)' }}>%</span>
+                  <span className="text-body-sm w-4 sm:w-6" style={{ color: 'var(--color-text-muted)' }}>%</span>
                   {sourceTotal > 0 && (
-                    <span className="text-caption w-20 text-right" style={{ color: 'var(--color-text-muted)' }}>
+                    <span className="hidden sm:block text-caption w-20 text-right" style={{ color: 'var(--color-text-muted)' }}>
                       = {form.currency} {((num(s.percentage) / 100) * sourceTotal).toFixed(2)}
                     </span>
                   )}
@@ -358,12 +358,12 @@ export default function AddExpenseModal({ trip, expense, onClose, onSaved }) {
               {splits.map((s) => {
                 const share = shareTotal > 0 ? (num(s.shares) / shareTotal) * sourceTotal : 0
                 return (
-                  <div key={s.userId} className="flex items-center gap-3">
-                    <span className="text-body-sm w-24 truncate">{s.name}</span>
+                  <div key={s.userId} className="flex items-center gap-2 sm:gap-3">
+                    <span className="text-body-sm w-20 sm:w-24 truncate">{s.name}</span>
                     <input type="number" min="0" step="1" className="input flex-1"
                            placeholder="1" value={s.shares}
                            onChange={(e) => setSplitField(s.userId, 'shares', e.target.value)} />
-                    <span className="text-caption w-28 text-right" style={{ color: 'var(--color-text-muted)' }}>
+                    <span className="hidden sm:block text-caption w-28 text-right" style={{ color: 'var(--color-text-muted)' }}>
                       = {form.currency} {share.toFixed(2)}
                     </span>
                   </div>
@@ -384,11 +384,13 @@ export default function AddExpenseModal({ trip, expense, onClose, onSaved }) {
                     <input className="input flex-1" placeholder={`Item ${index + 1}`}
                            value={item.name}
                            onChange={(e) => setItemField(index, 'name', e.target.value)} />
-                    <input type="number" min="0" step="0.01" className="input" style={{ width: 110 }}
-                           placeholder="0.00" value={item.amount}
-                           onChange={(e) => setItemField(index, 'amount', e.target.value)} />
+                    <div className="w-20 sm:w-[110px] flex-shrink-0">
+                      <input type="number" min="0" step="0.01" className="input"
+                             placeholder="0.00" value={item.amount}
+                             onChange={(e) => setItemField(index, 'amount', e.target.value)} />
+                    </div>
                     <button type="button" onClick={() => removeItem(index)}
-                            className="btn-ghost" style={{ padding: '0 10px', color: '#dc2626' }}>×</button>
+                            className="btn-ghost flex-shrink-0" style={{ padding: '0 10px', color: '#dc2626' }}>×</button>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {trip.members.map((m) => {
@@ -445,7 +447,7 @@ export default function AddExpenseModal({ trip, expense, onClose, onSaved }) {
               ))}
             </div>
             {form.recurrenceFrequency !== 'none' && (
-              <div className="grid grid-cols-2 gap-4 mt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
                 <div>
                   <label className="label">Every</label>
                   <input type="number" min="1" step="1" className="input"

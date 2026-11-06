@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native'
-import { colors, spacing, type } from '../theme'
+import { spacing, type } from '../theme'
 
 export default function OfflineBanner({ visible }) {
   if (!visible) return null

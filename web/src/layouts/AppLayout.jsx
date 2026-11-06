@@ -20,7 +20,7 @@ export default function AppLayout() {
         className="sticky top-0 z-40 w-full"
         style={{ borderBottom: '1px solid var(--color-border)', backgroundColor: 'rgba(252,249,247,0.85)', backdropFilter: 'blur(12px)' }}
       >
-        <div className="mx-auto max-w-6xl px-5 h-14 flex items-center justify-between">
+        <div className="mx-auto max-w-6xl px-4 sm:px-5 h-14 flex items-center justify-between gap-2">
           {/* Brand */}
           <Link to="/" className="flex items-center gap-2 text-decoration-none">
             <span className="text-xl" role="img" aria-label="plane">✈️</span>
@@ -30,7 +30,7 @@ export default function AppLayout() {
           </Link>
 
           {/* User area */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <NotificationsBell />
             <div className="flex items-center gap-2">
               {user?.avatar ? (
@@ -46,7 +46,7 @@ export default function AppLayout() {
                 {user?.name}
               </span>
             </div>
-            <button onClick={handleLogout} className="btn-ghost" style={{ height: 36, padding: '8px 14px', fontSize: 13 }}>
+            <button onClick={handleLogout} className="btn-ghost" style={{ height: 36, padding: '8px 10px', fontSize: 13 }}>
               Sign out
             </button>
           </div>
@@ -54,7 +54,7 @@ export default function AppLayout() {
       </header>
 
       {/* Page content */}
-      <main className="flex-1 mx-auto w-full max-w-6xl px-5 py-8">
+      <main className="flex-1 mx-auto w-full max-w-6xl px-4 sm:px-5 py-6 sm:py-8">
         <Outlet />
       </main>
     </div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, RefreshControl, Modal, ScrollView,
+  KeyboardAvoidingView, Platform,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -63,7 +64,7 @@ export default function TripsScreen() {
   ]
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -191,41 +192,49 @@ function CreateTripModal({ visible, onClose, onCreated }) {
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={styles.modalContainer}>
+      <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
         <View style={styles.modalHandle} />
         <Text style={styles.modalTitle}>New trip</Text>
-        <ScrollView contentContainerStyle={{ gap: spacing.lg, paddingBottom: spacing.xxxl }}>
-          <Input label="Trip name *" value={form.name} onChangeText={set('name')}
-            placeholder="e.g. Goa 2026" autoFocus />
-          <Input label="Description" value={form.description} onChangeText={set('description')}
-            placeholder="Optional" multiline numberOfLines={2} />
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <DateField label="Start date" value={form.startDate} onChange={set('startDate')}
-              placeholder="Optional" style={{ flex: 1 }} />
-            <DateField label="End date" value={form.endDate} onChange={set('endDate')}
-              placeholder="Optional" minimumDate={form.startDate ? new Date(form.startDate) : undefined}
-              style={{ flex: 1 }} />
-          </View>
-          <View>
-            <Text style={styles.inputLabel}>Currency</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-                {CURRENCIES.map((c) => (
-                  <TouchableOpacity key={c} onPress={() => set('currency')(c)}
-                    style={[styles.currencyChip, form.currency === c && styles.currencyChipActive]}>
-                    <Text style={{ ...type.bodyMdStrong,
-                      color: form.currency === c ? colors.white : colors.ink }}>{c}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-          <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
-            <Button title="Cancel" variant="ghost" onPress={onClose} style={{ flex: 1 }} />
-            <Button title="Create trip" onPress={handleCreate} loading={saving} style={{ flex: 1 }} />
-          </View>
-        </ScrollView>
-      </View>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView
+            contentContainerStyle={{ gap: spacing.lg, paddingBottom: spacing.xxxl }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Input label="Trip name *" value={form.name} onChangeText={set('name')}
+              placeholder="e.g. Goa 2026" autoFocus />
+            <Input label="Description" value={form.description} onChangeText={set('description')}
+              placeholder="Optional" multiline numberOfLines={2} />
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <DateField label="Start date" value={form.startDate} onChange={set('startDate')}
+                placeholder="Optional" style={{ flex: 1 }} />
+              <DateField label="End date" value={form.endDate} onChange={set('endDate')}
+                placeholder="Optional" minimumDate={form.startDate ? new Date(form.startDate) : undefined}
+                style={{ flex: 1 }} />
+            </View>
+            <View>
+              <Text style={styles.inputLabel}>Currency</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                  {CURRENCIES.map((c) => (
+                    <TouchableOpacity key={c} onPress={() => set('currency')(c)}
+                      style={[styles.currencyChip, form.currency === c && styles.currencyChipActive]}>
+                      <Text style={{ ...type.bodyMdStrong,
+                        color: form.currency === c ? colors.white : colors.ink }}>{c}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+              <Button title="Cancel" variant="ghost" onPress={onClose} style={{ flex: 1 }} />
+              <Button title="Create trip" onPress={handleCreate} loading={saving} style={{ flex: 1 }} />
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   )
 }

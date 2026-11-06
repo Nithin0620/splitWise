@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  View, Text, SectionList, TouchableOpacity, Switch,
+  View, Text, TouchableOpacity, Switch,
   StyleSheet, RefreshControl, ScrollView, Modal,
 } from 'react-native'
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import api from '../../../src/lib/api'
 import { useAuth } from '../../../src/context/AuthContext'
 import { getSocket } from '../../../src/lib/socket'
-import { Card, SmallButton, Button, Badge, Avatar, Divider, SectionLabel, LoadingScreen, EmptyState } from '../../../src/components/ui'
+import { Card, SmallButton, Button, Badge, Avatar, SectionLabel, LoadingScreen, EmptyState } from '../../../src/components/ui'
 import OfflineBanner from '../../../src/components/OfflineBanner'
 import { useDialog } from '../../../src/components/Dialog'
 import { colors, spacing, type, shadow } from '../../../src/theme'
@@ -51,7 +51,7 @@ export default function TripDetailScreen() {
       setBalances(bRes.data.data)
       setInsights(iRes.data.data)
       setFromCache([tRes, eRes, sRes, bRes, iRes].some((res) => res.fromCache))
-    } catch (err) {
+    } catch {
       setFromCache(false)
       dialog.alert('Error', 'Failed to load trip', { variant: 'error' })
       router.back()
@@ -222,27 +222,30 @@ export default function TripDetailScreen() {
 
         <OfflineBanner visible={fromCache} />
 
-        {/* Summary cards */}
-        <View style={styles.summaryRow}>
+        {/* Summary */}
+        <Card style={styles.summaryCard}>
           {[
             { label: 'Total spent',  value: balances?.totalExpenses ?? 0 },
             { label: 'Settled',      value: balances?.totalSettled ?? 0 },
             { label: 'Outstanding',  value: Math.max(0, (balances?.totalExpenses ?? 0) - (balances?.totalSettled ?? 0)) },
-          ].map(({ label, value }) => (
-            <Card key={label} style={styles.summaryCard}>
+          ].map(({ label, value }, i, arr) => (
+            <View
+              key={label}
+              style={[styles.summaryItem, i < arr.length - 1 && styles.summaryItemDivider]}
+            >
               <Text style={styles.summaryLabel}>{label}</Text>
               <Text style={styles.summaryValue} numberOfLines={1}>
                 {trip?.currency} {value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
               </Text>
-            </Card>
+            </View>
           ))}
-        </View>
+        </Card>
 
         {/* Action row */}
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.actionBtn}
             onPress={() => router.push(`/trips/${tripId}/settle`)}>
-            <Text style={styles.actionBtnText}>💸 Record payment</Text>
+            <Text style={styles.actionBtnText}>💸 Settle</Text>
           </TouchableOpacity>
           {isOwner && (
             <TouchableOpacity style={styles.actionBtn}
@@ -258,7 +261,12 @@ export default function TripDetailScreen() {
         </View>
 
         {/* Tabs */}
-        <View style={styles.tabRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tabScroll}
+          contentContainerStyle={styles.tabRow}
+        >
           {['expenses', 'insights', 'spending', 'balances', 'members'].map((t) => (
             <TouchableOpacity key={t} onPress={() => setTab(t)}
               style={[styles.tab, tab === t && styles.tabActive]}>
@@ -267,7 +275,7 @@ export default function TripDetailScreen() {
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
 
         {/* Tab content */}
         {tab === 'expenses' && (
@@ -390,6 +398,7 @@ function ExpensesTab({ expenses, userId, currency, tripId, onOpen, onDelete, onE
 }
 
 function ExpenseDetailSheet({ expense, currency, members, userId, onClose, onEdit, onDelete }) {
+  const insets = useSafeAreaInsets()
   if (!expense) return null
 
   const canManage = expense.createdBy?._id === userId || expense.paidBy?._id === userId
@@ -401,10 +410,10 @@ function ExpenseDetailSheet({ expense, currency, members, userId, onClose, onEdi
   for (const m of members || []) memberMap[m._id] = m.name
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
       <View style={styles.sheetOverlay}>
         <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: spacing.xl + insets.bottom }]}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
             <Text style={{ fontSize: 28 }}>{CAT_EMOJI[expense.category] ?? '📦'}</Text>
             <View style={{ flex: 1 }}>
@@ -801,17 +810,21 @@ const styles = StyleSheet.create({
   tripDates:   { ...type.caption, color: colors.textMuted, marginBottom: spacing.xs },
   metaRow:     { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   memberCountText: { ...type.caption, color: colors.textMuted },
-  summaryRow:  { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
-  summaryCard: { flex: 1, padding: spacing.md },
-  summaryLabel:{ ...type.caption, color: colors.textMuted, marginBottom: 4 },
+  summaryCard: { marginBottom: spacing.lg, padding: 0 },
+  summaryItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                 gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  summaryItemDivider: { borderTopWidth: 1, borderTopColor: colors.border },
+  summaryLabel:{ ...type.bodySm, color: colors.textMuted, flex: 1 },
   summaryValue:{ ...type.bodyMdStrong, color: colors.ink },
   actionRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
-  actionBtn:   { flex: 1, minWidth: '28%', padding: spacing.md, borderRadius: 12,
+  actionBtn:   { flexGrow: 1, flexBasis: '30%', minWidth: 0, padding: spacing.md, borderRadius: 12,
                  backgroundColor: colors.neutral, alignItems: 'center' },
-  actionBtnText: { ...type.bodySm, color: colors.ink },
+  actionBtnText: { ...type.bodySm, color: colors.ink, textAlign: 'center' },
+  tabScroll:   { marginBottom: spacing.lg },
   tabRow:      { flexDirection: 'row', gap: 2, backgroundColor: colors.neutral,
-                 borderRadius: 9999, padding: 4, marginBottom: spacing.lg },
-  tab:         { flex: 1, paddingVertical: spacing.xs, borderRadius: 9999, alignItems: 'center' },
+                 borderRadius: 9999, padding: 4 },
+  tab:         { paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+                 borderRadius: 9999, alignItems: 'center' },
   tabActive:   { backgroundColor: colors.white, ...shadow.sm },
   tabText:     { ...type.bodySm, color: colors.textMuted },
   tabTextActive:{ ...type.bodyMdStrong, color: colors.ink },

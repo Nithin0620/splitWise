@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
 import api from '../src/lib/api'
 import { colors, spacing, type } from '../src/theme'
@@ -21,6 +22,7 @@ const ICONS = {
 
 export default function NotificationsScreen() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const dialog = useDialog()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -75,15 +77,21 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Notifications</Text>
-        {unreadCount > 0 && <SmallButton title="Mark all read" onPress={markAllRead} />}
-      </View>
+      {unreadCount > 0 && (
+        <View style={styles.header}>
+          <SmallButton title="Mark all read" onPress={markAllRead} />
+        </View>
+      )}
 
       <FlatList
         data={items}
         keyExtractor={(item) => item._id}
-        contentContainerStyle={{ padding: spacing.xl, paddingTop: spacing.sm, flexGrow: 1 }}
+        contentContainerStyle={{
+          padding: spacing.xl,
+          paddingTop: spacing.sm,
+          paddingBottom: spacing.xl + insets.bottom,
+          flexGrow: 1,
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -132,10 +140,9 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.canvas },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end',
     paddingHorizontal: spacing.xl, paddingVertical: spacing.md,
   },
-  title: { ...type.displaySm },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, paddingVertical: spacing.sm },
   iconWrap: {
     width: 40, height: 40, borderRadius: 9999,
