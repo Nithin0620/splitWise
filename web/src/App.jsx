@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import AppLayout from './layouts/AppLayout'
 import ErrorBoundary from './components/ErrorBoundary'
+import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import AuthCallback from './pages/AuthCallback'
 import DashboardPage from './pages/DashboardPage'
@@ -19,7 +20,7 @@ function ProtectedRoute({ children }) {
 function PublicRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return <LoadingScreen />
-  if (user)    return <Navigate to="/" replace />
+  if (user)    return <Navigate to="/dashboard" replace />
   return children
 }
 
@@ -43,13 +44,14 @@ export default function App() {
         <ErrorBoundary>
           <Routes>
           {/* Public */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/invite/accept" element={<AcceptInvitePage />} />
 
           {/* Protected */}
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-            <Route index element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/trips/:tripId" element={<TripDetailPage />} />
           </Route>
 

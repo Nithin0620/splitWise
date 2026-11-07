@@ -83,7 +83,7 @@ export default function AcceptInvitePage() {
             <div className="text-5xl mb-4">❌</div>
             <h2 className="text-heading-md mb-2">Invite not valid</h2>
             <p className="text-body-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>{error}</p>
-            <button className="btn-primary w-full" onClick={() => navigate('/')}>
+            <button className="btn-primary w-full" onClick={() => navigate('/dashboard')}>
               Go to dashboard
             </button>
           </div>

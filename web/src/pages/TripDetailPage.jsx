@@ -56,7 +56,7 @@ export default function TripDetailPage() {
       setFromCache(false)
       if (err.response?.status === 403 || err.response?.status === 404) {
         toast.error('Trip not found or access denied')
-        navigate('/')
+        navigate('/dashboard')
       } else {
         toast.error('Failed to load trip')
       }
@@ -211,7 +211,7 @@ export default function TripDetailPage() {
   return (
     <div>
       {/* Back */}
-      <button onClick={() => navigate('/')} className="flex items-center gap-1 text-body-sm mb-4 sm:mb-6 hover:opacity-70 transition-opacity"
+      <button onClick={() => navigate('/dashboard')} className="flex items-center gap-1 text-body-sm mb-4 sm:mb-6 hover:opacity-70 transition-opacity"
               style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
         ← All trips
       </button>

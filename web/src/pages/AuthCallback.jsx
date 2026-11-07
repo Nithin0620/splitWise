@@ -31,7 +31,7 @@ export default function AuthCallback() {
         sessionStorage.removeItem('pending_invite_token')
         navigate(`/invite/accept?token=${pendingInviteToken}`, { replace: true })
       } else {
-        navigate('/', { replace: true })
+        navigate('/dashboard', { replace: true })
       }
     }
 

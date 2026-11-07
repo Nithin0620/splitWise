@@ -33,7 +33,7 @@ export default class ErrorBoundary extends Component {
             <button className="btn-primary" onClick={() => window.location.reload()}>
               Reload
             </button>
-            <a className="btn-ghost" href="/">Back to trips</a>
+            <a className="btn-ghost" href="/dashboard">Back to trips</a>
           </div>
         </div>
       </div>

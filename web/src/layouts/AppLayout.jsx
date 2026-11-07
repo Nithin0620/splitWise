@@ -22,7 +22,7 @@ export default function AppLayout() {
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-5 h-14 flex items-center justify-between gap-2">
           {/* Brand */}
-          <Link to="/" className="flex items-center gap-2 text-decoration-none">
+          <Link to="/dashboard" className="flex items-center gap-2 text-decoration-none">
             <span className="text-xl" role="img" aria-label="plane">✈️</span>
             <span className="font-serif text-heading-lg" style={{ color: 'var(--color-ink)' }}>
               SplitWise

@@ -85,6 +85,8 @@ npm run dev          # http://localhost:5173
 
 With `VITE_API_URL` empty, Vite proxies `/api` and `/socket.io` to `http://localhost:5000` (see `web/vite.config.js`), so local development works without CORS setup. To point at a deployed API, set `VITE_API_URL` to the backend **origin** (no `/api` suffix, no trailing slash).
 
+The public landing page is served at `/`; the authenticated app lives at `/dashboard`. The landing page includes the Android APK install button (Google Drive link).
+
 ### 3. Mobile app
 
 ```bash
