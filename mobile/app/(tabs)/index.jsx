@@ -28,8 +28,7 @@ export default function TripsScreen() {
   const [filter, setFilter] = useState('active')
   const [fromCache, setFromCache] = useState(false)
 
-  const fetchTrips = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true)
+  const fetchTrips = useCallback(async () => {
     try {
       const { data, fromCache: cached } = await api.get('/trips')
       setTrips(data.data)
@@ -43,9 +42,11 @@ export default function TripsScreen() {
     }
   }, [dialog])
 
-  useEffect(() => { fetchTrips() }, [fetchTrips])
+  useEffect(() => {
+    Promise.resolve().then(fetchTrips)
+  }, [fetchTrips])
 
-  const onRefresh = () => { setRefreshing(true); fetchTrips(true) }
+  const onRefresh = () => { setRefreshing(true); fetchTrips() }
 
   const handleCreated = (trip) => {
     setTrips((p) => [trip, ...p])
@@ -191,7 +192,14 @@ function CreateTripModal({ visible, onClose, onCreated }) {
   }
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onClose}
+    >
       <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
         <View style={styles.modalHandle} />
         <Text style={styles.modalTitle}>New trip</Text>

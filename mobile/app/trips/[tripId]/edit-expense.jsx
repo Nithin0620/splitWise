@@ -28,7 +28,7 @@ export default function EditExpenseScreen() {
       dialog.alert('Error', 'Failed to load expense', { variant: 'error' })
       router.back()
     })
-  }, [tripId, expenseId, dialog])
+  }, [tripId, expenseId, dialog, router])
 
   const handleSubmit = async (payload) => {
     setSaving(true)

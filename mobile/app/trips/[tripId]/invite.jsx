@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import api from '../../../src/lib/api'
@@ -14,14 +14,12 @@ export default function InviteScreen() {
   const [email, setEmail]     = useState('')
   const [sending, setSending] = useState(false)
   const [invites, setInvites] = useState([])
-  const [trip, setTrip]       = useState(null)
 
   useEffect(() => {
     Promise.all([
       api.get(`/trips/${tripId}`),
       api.get(`/invites/trips/${tripId}`),
-    ]).then(([tRes, iRes]) => {
-      setTrip(tRes.data.data)
+    ]).then(([, iRes]) => {
       setInvites(iRes.data.data)
     }).catch(() => {})
   }, [tripId])

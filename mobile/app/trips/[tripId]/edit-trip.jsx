@@ -35,7 +35,7 @@ export default function EditTripScreen() {
         dialog.alert('Error', 'Failed to load trip', { variant: 'error' })
         router.back()
       })
-  }, [tripId, dialog])
+  }, [tripId, dialog, router])
 
   const set = (k) => (v) => setForm((p) => ({ ...p, [k]: v }))
 

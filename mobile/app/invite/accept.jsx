@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import * as Linking from 'expo-linking'
 import api from '../../src/lib/api'
 import { useAuth } from '../../src/context/AuthContext'
 import { Button, Card, Badge, Avatar, LoadingScreen } from '../../src/components/ui'
@@ -17,26 +16,19 @@ export default function AcceptInviteScreen() {
 
   const token = params.token
   const [preview, setPreview]   = useState(null)
-  const [status, setStatus]     = useState('loading') // loading | valid | invalid | accepting
-  const [errMsg, setErrMsg]     = useState('')
+  const [status, setStatus]     = useState(token ? 'loading' : 'invalid') // loading | valid | invalid | accepting
+  const [errMsg, setErrMsg]     = useState(token ? '' : 'No invite token in link.')
   const accepted = useRef(false)
 
   // Load preview (no auth needed)
   useEffect(() => {
-    if (!token) { setStatus('invalid'); setErrMsg('No invite token in link.'); return }
+    if (!token) return
     api.get(`/invites/preview?token=${token}`)
       .then(({ data }) => { setPreview(data.data); setStatus('valid') })
       .catch((err) => { setErrMsg(err.response?.data?.message || 'Invalid or expired link.'); setStatus('invalid') })
   }, [token])
 
-  // Auto-accept when user is already signed in
-  useEffect(() => {
-    if (authLoading || accepted.current || status !== 'valid' || !user) return
-    accepted.current = true
-    doAccept()
-  }, [status, user, authLoading])
-
-  const doAccept = async () => {
+  const doAccept = useCallback(async () => {
     setStatus('accepting')
     try {
       const { data } = await api.post('/invites/accept', { token })
@@ -49,7 +41,14 @@ export default function AcceptInviteScreen() {
       setErrMsg(err.response?.data?.message || 'Could not accept invite.')
       setStatus('invalid')
     }
-  }
+  }, [token, dialog, router])
+
+  // Auto-accept when user is already signed in
+  useEffect(() => {
+    if (authLoading || accepted.current || status !== 'valid' || !user) return
+    accepted.current = true
+    doAccept()
+  }, [status, user, authLoading, doAccept])
 
   const handleSignIn = () => {
     // Store token then push to login — after login AuthContext fires doAccept via useEffect

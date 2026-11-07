@@ -269,17 +269,17 @@ export default function TripDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         {/* Left col: expenses + balances */}
-        <div className="lg:col-span-2 flex flex-col gap-5 sm:gap-6">
+        <div className="lg:col-span-2 flex flex-col gap-5 sm:gap-6 min-w-0">
           {/* Summary bar */}
           <SummaryBar balances={balances} currency={trip.currency} />
 
           {/* Tabs */}
           <div>
-            <div className="flex gap-1 mb-4 p-1 rounded-full w-full sm:w-fit overflow-x-auto no-scrollbar"
+            <div className="grid grid-cols-4 gap-1 mb-4 p-1 rounded-full w-full sm:flex sm:w-fit"
                  style={{ backgroundColor: 'var(--color-neutral)' }}>
               {['expenses', 'insights', 'spending', 'balances'].map((t) => (
                 <button key={t} onClick={() => setTab(t)}
-                        className="flex-1 sm:flex-none px-4 sm:px-5 py-1.5 rounded-full text-body-sm font-medium transition-all capitalize whitespace-nowrap"
+                        className="px-1 sm:px-5 py-1.5 rounded-full text-[12px] sm:text-[14px] font-medium transition-all capitalize whitespace-nowrap text-center"
                         style={{
                           backgroundColor: tab === t ? '#fff' : 'transparent',
                           color: tab === t ? 'var(--color-ink)' : 'var(--color-text-muted)',
@@ -326,7 +326,7 @@ export default function TripDetailPage() {
         </div>
 
         {/* Right col: members */}
-        <div>
+        <div className="min-w-0">
           <MembersPanel
             trip={trip}
             userId={user?._id}
@@ -446,39 +446,35 @@ function ExpenseList({ expenses, userId, currency, onOpen, onEdit, onDelete }) {
                 {CATEGORY_EMOJI[exp.category] || '📦'}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-body-md-strong truncate">{exp.title}</p>
-                    <p className="text-caption mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-                      Paid by {iPaid ? 'you' : exp.paidBy?.name} ·{' '}
-                      {formatDate(exp.date, { day: 'numeric', month: 'short' })}
-                      {exp.splitType && exp.splitType !== 'equal'
-                        ? ` · ${SPLIT_LABELS[exp.splitType] ?? exp.splitType}` : ''}
-                      {exp.recurrence?.frequency && exp.recurrence.frequency !== 'none'
-                        ? ` · 🔁 ${exp.recurrence.frequency}` : ''}
-                    </p>
-                    {exp.notes && (
-                      <p className="text-caption mt-1 italic truncate" style={{ color: 'var(--color-text-muted)' }}>
-                        {exp.notes}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right flex-shrink-0">
+                <p className="text-body-md-strong break-words">{exp.title}</p>
+                <p className="text-caption mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                  Paid by {iPaid ? 'you' : exp.paidBy?.name} ·{' '}
+                  {formatDate(exp.date, { day: 'numeric', month: 'short' })}
+                  {exp.splitType && exp.splitType !== 'equal'
+                    ? ` · ${SPLIT_LABELS[exp.splitType] ?? exp.splitType}` : ''}
+                  {exp.recurrence?.frequency && exp.recurrence.frequency !== 'none'
+                    ? ` · 🔁 ${exp.recurrence.frequency}` : ''}
+                </p>
+                {exp.notes && (
+                  <p className="text-caption mt-1 italic truncate" style={{ color: 'var(--color-text-muted)' }}>
+                    {exp.notes}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-end justify-between gap-2 mt-2">
+                  <div className="min-w-0">
                     {exp.currency && exp.currency !== currency && (
                       <p className="text-caption" style={{ color: 'var(--color-text-muted)' }}>
                         {exp.currency} {Number(exp.originalAmount ?? exp.amount).toFixed(2)}
                       </p>
                     )}
-                    <p className="text-body-md-strong whitespace-nowrap">
+                    <p className="text-body-md-strong break-words">
                       {currency} {exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                     </p>
+                    <p className="text-caption" style={{ color: iPaid ? '#059669' : 'var(--color-text-muted)' }}>
+                      {iPaid ? `you lent ${currency} ${(exp.amount - myShare).toFixed(2)}` : `your share ${currency} ${myShare.toFixed(2)}`}
+                    </p>
                   </div>
-                </div>
-                <div className="flex items-center justify-between gap-2 mt-2">
-                  <p className="text-caption min-w-0 truncate" style={{ color: iPaid ? '#059669' : 'var(--color-text-muted)' }}>
-                    {iPaid ? `you lent ${currency} ${(exp.amount - myShare).toFixed(2)}` : `your share ${currency} ${myShare.toFixed(2)}`}
-                  </p>
-                  <div className="flex gap-1 flex-shrink-0">
+                  <div className="flex gap-1 flex-shrink-0 ml-auto">
                     {(exp.createdBy?._id === userId || exp.paidBy?._id === userId) && (
                       <>
                         <button onClick={(e) => { e.stopPropagation(); onEdit(exp) }}

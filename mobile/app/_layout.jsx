@@ -22,7 +22,7 @@ function RootNavigator() {
     } else if (user && inAuth) {
       router.replace('/(tabs)')
     }
-  }, [user, loading, segments])
+  }, [user, loading, segments, router])
 
   if (loading) return <LoadingScreen />
 

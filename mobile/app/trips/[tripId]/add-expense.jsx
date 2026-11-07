@@ -24,7 +24,7 @@ export default function AddExpenseScreen() {
         dialog.alert('Error', 'Failed to load trip', { variant: 'error' })
         router.back()
       })
-  }, [tripId, dialog])
+  }, [tripId, dialog, router])
 
   const handleSubmit = async (payload) => {
     setSaving(true)

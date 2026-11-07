@@ -35,8 +35,7 @@ export default function TripDetailScreen() {
   const [simplify, setSimplify]       = useState(true)
   const [fromCache, setFromCache]     = useState(false)
 
-  const loadAll = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true)
+  const loadAll = useCallback(async () => {
     try {
       const [tRes, eRes, sRes, bRes, iRes] = await Promise.all([
         api.get(`/trips/${tripId}`),
@@ -59,15 +58,17 @@ export default function TripDetailScreen() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [tripId, simplify, dialog])
+  }, [tripId, simplify, dialog, router])
 
-  useEffect(() => { loadAll() }, [loadAll])
+  useEffect(() => {
+    Promise.resolve().then(() => loadAll())
+  }, [loadAll])
 
   // Socket live updates
   useEffect(() => {
     const socket = getSocket()
     socket.emit('join_trip', tripId)
-    const refresh = () => loadAll(true)
+    const refresh = () => loadAll()
     const events = ['expense_created','expense_updated','expense_deleted',
                     'settlement_created','settlement_deleted','member_added','member_removed','trip_updated']
     events.forEach((e) => socket.on(e, refresh))
@@ -89,7 +90,7 @@ export default function TripDetailScreen() {
     if (!ok) return
     try {
       await api.put(`/trips/${tripId}`, { isArchived: next })
-      loadAll(true)
+      loadAll()
     } catch {
       dialog.alert('Error', 'Failed to update trip', { variant: 'error' })
     }
@@ -104,7 +105,7 @@ export default function TripDetailScreen() {
     if (!ok) return
     try {
       await api.delete(`/expenses/${id}`)
-      loadAll(true)
+      loadAll()
     } catch {
       dialog.alert('Error', 'Failed to delete', { variant: 'error' })
     }
@@ -124,7 +125,7 @@ export default function TripDetailScreen() {
         fromUser: from, toUser: to, amount: t.amount,
         notes: 'Settled in one tap',
       })
-      loadAll(true)
+      loadAll()
     } catch (err) {
       dialog.alert('Error', err.response?.data?.message || 'Failed to record payment', { variant: 'error' })
     }
@@ -147,7 +148,7 @@ export default function TripDetailScreen() {
           amount: t.amount,
         })),
       })
-      loadAll(true)
+      loadAll()
     } catch (err) {
       dialog.alert('Error', err.response?.data?.message || 'Failed to settle', { variant: 'error' })
     }
@@ -205,7 +206,7 @@ export default function TripDetailScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: spacing.xl, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadAll(true) }} tintColor={colors.ink} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadAll() }} tintColor={colors.ink} />}
       >
         {/* Trip meta */}
         <View style={styles.tripMeta}>
@@ -303,14 +304,14 @@ export default function TripDetailScreen() {
               if (!ok) return
               try {
                 await api.delete(`/settlements/${id}`)
-                loadAll(true)
+                loadAll()
               } catch (err) {
                 dialog.alert('Error', err.response?.data?.message || 'Failed to remove settlement', { variant: 'error' })
               }
             }} />
         )}
         {tab === 'members' && (
-          <MembersTab trip={trip} userId={user?._id} isOwner={isOwner} onRefresh={() => loadAll(true)} />
+          <MembersTab trip={trip} userId={user?._id} isOwner={isOwner} onRefresh={() => loadAll()} />
         )}
       </ScrollView>
 
