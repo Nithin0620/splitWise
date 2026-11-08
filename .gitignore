@@ -154,3 +154,6 @@ vite.config.ts.timestamp-*
 # Cloudflare Workers
 .wrangler/
 .dev.vars
+
+# Android signing keys (never commit)
+*.keystore

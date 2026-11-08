@@ -85,7 +85,7 @@ npm run dev          # http://localhost:5173
 
 With `VITE_API_URL` empty, Vite proxies `/api` and `/socket.io` to `http://localhost:5000` (see `web/vite.config.js`), so local development works without CORS setup. To point at a deployed API, set `VITE_API_URL` to the backend **origin** (no `/api` suffix, no trailing slash).
 
-The public landing page is served at `/`; the authenticated app lives at `/dashboard`. The landing page includes the Android APK install button (Google Drive link).
+The public landing page is served at `/`; the authenticated app lives at `/dashboard`. The landing page includes the Android APK install button, which points at the latest GitHub Release asset (`/releases/latest/download/splitwise.apk`).
 
 ### 3. Mobile app
 
@@ -406,6 +406,34 @@ npx eas-cli@latest submit -p android                       # upload the AAB
 ```
 
 EAS manages the Android keystore for you. Keep the credentials EAS generates; losing them prevents updates to an app already installed from the Play Store.
+
+### Automated GitHub Releases (tag push → APK)
+
+Pushing a tag that starts with `v` builds the release APK on GitHub Actions and publishes it as a GitHub Release asset named `splitwise.apk`:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The workflow is `.github/workflows/release-apk.yml`. It sets `expo.version` from the tag, uses the workflow run number as `android.versionCode`, builds with Gradle, and uploads the APK. The landing page always links to the newest build via `https://github.com/Nithin0620/splitWise/releases/latest/download/splitwise.apk`.
+
+Create a stable release keystore once (keep it and its passwords backed up), then add these repository secrets under **Settings → Secrets and variables → Actions**:
+
+```bash
+keytool -genkeypair -v -keystore release.keystore -alias splitwise \
+  -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 release.keystore    # paste into ANDROID_KEYSTORE_BASE64
+```
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | base64-encoded `release.keystore` |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore password |
+| `ANDROID_KEY_ALIAS` | key alias (`splitwise`) |
+| `ANDROID_KEY_PASSWORD` | key password |
+
+A stable keystore is required so successive releases can update an already-installed app. If the secrets are absent the workflow falls back to debug signing, and each build will have a different signature.
 
 ### Signing, versioning, and updates
 

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const APK_URL = 'https://drive.google.com/file/d/1c3-SGFTng_RTavHmQgb6aqiBDNAo1BV9/view?usp=sharing'
+const APK_URL = 'https://github.com/Nithin0620/splitWise/releases/latest/download/splitwise.apk'
 const YEAR = new Date().getFullYear()
 
 const FEATURES = [
