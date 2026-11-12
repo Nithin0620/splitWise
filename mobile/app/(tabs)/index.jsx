@@ -6,7 +6,7 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import api from '../../src/lib/api'
+import api, { isUnauthorized } from '../../src/lib/api'
 import { useAuth } from '../../src/context/AuthContext'
 import { Card, Button, Input, Badge, Avatar, EmptyState, LoadingScreen, DateField } from '../../src/components/ui'
 import NotificationBell from '../../src/components/NotificationBell'
@@ -19,6 +19,7 @@ const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'JPY', 'AED
 
 export default function TripsScreen() {
   const { user } = useAuth()
+  const userId = user?._id
   const router = useRouter()
   const dialog = useDialog()
   const [trips, setTrips]         = useState([])
@@ -29,18 +30,19 @@ export default function TripsScreen() {
   const [fromCache, setFromCache] = useState(false)
 
   const fetchTrips = useCallback(async () => {
+    if (!userId) return
     try {
       const { data, fromCache: cached } = await api.get('/trips')
       setTrips(data.data)
       setFromCache(!!cached)
-    } catch {
+    } catch (err) {
       setFromCache(false)
-      dialog.alert('Error', 'Failed to load trips', { variant: 'error' })
+      if (!isUnauthorized(err)) dialog.alert('Error', 'Failed to load trips', { variant: 'error' })
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [dialog])
+  }, [dialog, userId])
 
   useEffect(() => {
     Promise.resolve().then(fetchTrips)

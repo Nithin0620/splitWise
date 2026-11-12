@@ -18,7 +18,7 @@ function RootNavigator() {
     const inAuth = segments[0] === '(auth)'
     const inInvite = segments[0] === 'invite'
     if (!user && !inAuth && !inInvite) {
-      router.replace('/(auth)/login')
+      router.replace('/(auth)/welcome')
     } else if (user && inAuth) {
       router.replace('/(tabs)')
     }
@@ -29,32 +29,35 @@ function RootNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
       <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="notifications"
-        options={{ headerShown: true, title: 'Notifications',
-          headerStyle: { backgroundColor: colors.canvas },
-          headerTintColor: colors.ink, headerShadowVisible: false }} />
+      <Stack.Protected guard={!!user}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="notifications"
+          options={{ headerShown: true, title: 'Notifications',
+            headerStyle: { backgroundColor: colors.canvas },
+            headerTintColor: colors.ink, headerShadowVisible: false }} />
+        <Stack.Screen name="trips/[tripId]/index" />
+        <Stack.Screen name="trips/[tripId]/edit-trip"
+          options={{ presentation: 'modal', headerShown: true, title: 'Edit Trip',
+            headerStyle: { backgroundColor: colors.canvas },
+            headerTintColor: colors.ink, headerShadowVisible: false }} />
+        <Stack.Screen name="trips/[tripId]/add-expense"
+          options={{ presentation: 'modal', headerShown: true, title: 'Add Expense',
+            headerStyle: { backgroundColor: colors.canvas },
+            headerTintColor: colors.ink, headerShadowVisible: false }} />
+        <Stack.Screen name="trips/[tripId]/edit-expense"
+          options={{ presentation: 'modal', headerShown: true, title: 'Edit Expense',
+            headerStyle: { backgroundColor: colors.canvas },
+            headerTintColor: colors.ink, headerShadowVisible: false }} />
+        <Stack.Screen name="trips/[tripId]/settle"
+          options={{ presentation: 'modal', headerShown: true, title: 'Record Payment',
+            headerStyle: { backgroundColor: colors.canvas },
+            headerTintColor: colors.ink, headerShadowVisible: false }} />
+        <Stack.Screen name="trips/[tripId]/invite"
+          options={{ presentation: 'modal', headerShown: true, title: 'Invite Member',
+            headerStyle: { backgroundColor: colors.canvas },
+            headerTintColor: colors.ink, headerShadowVisible: false }} />
+      </Stack.Protected>
       <Stack.Screen name="invite/accept" />
-      <Stack.Screen name="trips/[tripId]/edit-trip"
-        options={{ presentation: 'modal', headerShown: true, title: 'Edit Trip',
-          headerStyle: { backgroundColor: colors.canvas },
-          headerTintColor: colors.ink, headerShadowVisible: false }} />
-      <Stack.Screen name="trips/[tripId]/add-expense"
-        options={{ presentation: 'modal', headerShown: true, title: 'Add Expense',
-          headerStyle: { backgroundColor: colors.canvas },
-          headerTintColor: colors.ink, headerShadowVisible: false }} />
-      <Stack.Screen name="trips/[tripId]/edit-expense"
-        options={{ presentation: 'modal', headerShown: true, title: 'Edit Expense',
-          headerStyle: { backgroundColor: colors.canvas },
-          headerTintColor: colors.ink, headerShadowVisible: false }} />
-      <Stack.Screen name="trips/[tripId]/settle"
-        options={{ presentation: 'modal', headerShown: true, title: 'Record Payment',
-          headerStyle: { backgroundColor: colors.canvas },
-          headerTintColor: colors.ink, headerShadowVisible: false }} />
-      <Stack.Screen name="trips/[tripId]/invite"
-        options={{ presentation: 'modal', headerShown: true, title: 'Invite Member',
-          headerStyle: { backgroundColor: colors.canvas },
-          headerTintColor: colors.ink, headerShadowVisible: false }} />
     </Stack>
   )
 }

@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { useRouter } from 'expo-router'
 import { makeRedirectUri } from 'expo-auth-session'
 import * as WebBrowser from 'expo-web-browser'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -16,6 +17,7 @@ const GOOGLE_AUTH_URL = BASE_URL.replace('/api', '') + '/api/auth/google'
 export default function LoginScreen() {
   const { login } = useAuth()
   const dialog = useDialog()
+  const router = useRouter()
 
   const handleGoogleLogin = async () => {
     // Warm up the browser for a smoother, more reliable Custom Tab experience on Android
@@ -48,6 +50,14 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <TouchableOpacity
+        onPress={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/welcome'))}
+        style={styles.back}
+        accessibilityRole="button"
+        accessibilityLabel="Back to welcome"
+      >
+        <Text style={styles.backText}>← Back</Text>
+      </TouchableOpacity>
       <View style={styles.container}>
         {/* Brand */}
         <View style={styles.brand}>
@@ -88,6 +98,8 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   safe:      { flex: 1, backgroundColor: colors.canvas },
+  back:      { alignSelf: 'flex-start', paddingHorizontal: spacing.xl, paddingVertical: spacing.sm },
+  backText:  { ...type.bodyMdStrong, color: colors.textMuted },
   container: { flex: 1, paddingHorizontal: spacing.xl, justifyContent: 'center' },
   brand:     { alignItems: 'center', marginBottom: spacing.xxxl },
   emoji:     { fontSize: 52, marginBottom: spacing.md },

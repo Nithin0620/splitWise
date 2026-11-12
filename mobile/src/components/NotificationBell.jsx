@@ -12,10 +12,11 @@ export default function NotificationBell() {
   const [count, setCount] = useState(0)
 
   const refresh = useCallback(() => {
+    if (!user) return
     api.get('/notifications/unread-count')
       .then(({ data }) => setCount(data.data.count))
       .catch(() => {})
-  }, [])
+  }, [user])
 
   useFocusEffect(
     useCallback(() => {
