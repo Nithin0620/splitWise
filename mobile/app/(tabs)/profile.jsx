@@ -19,7 +19,7 @@ export default function ProfileScreen() {
     )
     if (!ok) return
     await logout()
-    router.replace('/(auth)/login')
+    router.replace('/(auth)/welcome')
   }
 
   return (

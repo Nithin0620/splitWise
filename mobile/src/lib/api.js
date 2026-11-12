@@ -55,4 +55,7 @@ api.interceptors.response.use(
   }
 )
 
+// 401s are handled globally (sign-out + redirect), so screens should not alert on them.
+export const isUnauthorized = (err) => err?.response?.status === 401
+
 export default api

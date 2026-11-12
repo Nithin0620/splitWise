@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
-import api from '../src/lib/api'
+import api, { isUnauthorized } from '../src/lib/api'
 import { colors, spacing, type } from '../src/theme'
 import { timeAgo } from '../src/lib/date'
 import { EmptyState, LoadingScreen, SmallButton, Divider } from '../src/components/ui'
@@ -33,8 +33,8 @@ export default function NotificationsScreen() {
     try {
       const { data } = await api.get('/notifications')
       setItems(data.data)
-    } catch {
-      dialog.alert('Error', 'Failed to load notifications', { variant: 'error' })
+    } catch (err) {
+      if (!isUnauthorized(err)) dialog.alert('Error', 'Failed to load notifications', { variant: 'error' })
     } finally {
       setLoading(false)
       setRefreshing(false)

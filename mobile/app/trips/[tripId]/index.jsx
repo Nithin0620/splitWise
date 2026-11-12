@@ -5,7 +5,7 @@ import {
 } from 'react-native'
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import api from '../../../src/lib/api'
+import api, { isUnauthorized } from '../../../src/lib/api'
 import { useAuth } from '../../../src/context/AuthContext'
 import { getSocket } from '../../../src/lib/socket'
 import { Card, SmallButton, Button, Badge, Avatar, SectionLabel, LoadingScreen, EmptyState } from '../../../src/components/ui'
@@ -50,8 +50,9 @@ export default function TripDetailScreen() {
       setBalances(bRes.data.data)
       setInsights(iRes.data.data)
       setFromCache([tRes, eRes, sRes, bRes, iRes].some((res) => res.fromCache))
-    } catch {
+    } catch (err) {
       setFromCache(false)
+      if (isUnauthorized(err)) return
       dialog.alert('Error', 'Failed to load trip', { variant: 'error' })
       router.back()
     } finally {
